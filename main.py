@@ -1,16 +1,30 @@
-# This is a sample Python script.
+import pygame
+from player import Player
 
-# Press Ctrl+F5 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+width = 500
+height = 500
+win = pygame.display.set_mode((width, height))
+pygame.display.set_caption('Client')
 
+client = 0
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press F9 to toggle the breakpoint.
+def redrawWindow():
+    win.fill((0, 0, 0))
+    pygame.display.update()
 
+def main():
+    run = True
+    p = Player(50, 50, 100, 100, (255, 255, 255))
+    clock = pygame.time.Clock()
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
+    while run:
+        clock.tick(60)
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                run = False
+                pygame.quit()
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+        p.move()
+        redrawWindow(win, p)
+
+main()
