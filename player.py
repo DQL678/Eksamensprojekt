@@ -33,19 +33,26 @@ class Player:
             self.y_velocity = -self.jump_strength
             self.on_ground = False
 
-        self.move_horizontal(move_x, screen_width)
+        self.move_horizontal(move_x, platforms, screen_width)
 
         self.y_velocity += self.gravity
         if self.y_velocity > 16:
             self.y_velocity = 16
 
-        self.move_vertical(platforms)
+        self.move_vertical(platforms, screen_height)
 
         self.x = self.rect.x
         self.y = self.rect.y
 
-    def move_horizontal(self, dx, screen_width):
+    def move_horizontal(self, dx, platforms, screen_width):
         self.rect.x += dx
+
+        for platform in platforms:
+            if self.rect.colliderect(platform):
+                if dx > 0:
+                    self.rect.right = platform.left
+                elif dx < 0:
+                    self.rect.left = platform.right
 
         if self.rect.left < 0:
             self.rect.left = 0
@@ -53,23 +60,25 @@ class Player:
         if self.rect.right > screen_width:
             self.rect.right = screen_width
 
-    def move_vertical(self, platforms):
+    def move_vertical(self, platforms, screen_height):
         self.on_ground = False
 
-        old_bottom = self.rect.bottom
         self.rect.y += int(self.y_velocity)
 
         for platform in platforms:
-            if self.y_velocity >= 0:
-                landed_on_platform = (
-                    self.rect.colliderect(platform)
-                    and old_bottom <= platform.top + 10
-                )
-
-                if landed_on_platform:
+            if self.rect.colliderect(platform):
+                if self.y_velocity > 0:
                     self.rect.bottom = platform.top
                     self.y_velocity = 0
                     self.on_ground = True
+                elif self.y_velocity < 0:
+                    self.rect.top = platform.bottom
+                    self.y_velocity = 0
+
+        if self.rect.bottom > screen_height:
+            self.rect.bottom = screen_height
+            self.y_velocity = 0
+            self.on_ground = True
 
     def shoot(self):
         pass
