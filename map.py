@@ -1,79 +1,91 @@
-# map.py
-import tkinter as tk
+import pygame
 
 
 class GameMap:
-    def __init__(self, canvas):
-        self.canvas = canvas
-        self.width = 1600
-        self.height = 900
-        self.walls = []
+    def __init__(self, width, height):
+        self.width = width
+        self.height = height
+        self.platforms = []
 
-    def draw(self):
-        """Tegner hele mappet."""
-        self.canvas.delete("all")
-        self.draw_background()
-        self.create_walls()
-        self.draw_walls()
+        self.create_platforms()
+        self.floor = self.platforms[0]
 
-    def draw_background(self):
-        """Tegner baggrunden."""
-        self.canvas.create_rectangle(
-            0, 0, self.width, self.height,
-            fill="darkseagreen3", outline=""
-        )
+    def create_platforms(self):
+        self.platforms = [
+            # Gulv
+            pygame.Rect(0, 860, 1500, 40),
 
-    def create_walls(self):
-        """
-        Laver en simpel liste med vægge.
-        Hver væg er en firkant: (x1, y1, x2, y2)
-        """
-        self.walls = [
-            # Yderkant
-            (0, 0, 1600, 40),
-            (0, 860, 1600, 900),
-            (0, 0, 40, 900),
-            (1560, 0, 1600, 900),
+            # 1. række (3 platforme)
+            pygame.Rect(180, 100, 140, 8),
+            pygame.Rect(680, 100, 140, 8),
+            pygame.Rect(1180, 100, 140, 8),
 
-            # Indre vægge
-            (250, 150, 500, 200),
-            (700, 100, 750, 350),
-            (950, 250, 1300, 300),
-            (300, 400, 350, 750),
-            (550, 600, 1000, 650),
-            (1150, 450, 1200, 800),
+            # 2. række (4 platforme)
+            pygame.Rect(60, 220, 120, 8),
+            pygame.Rect(400, 220, 160, 8),
+            pygame.Rect(940, 220, 160, 8),
+            pygame.Rect(1280, 220, 120, 8),
+
+            # 3. række (3 platforme)
+            pygame.Rect(140, 340, 140, 8),
+            pygame.Rect(680, 340, 140, 8),
+            pygame.Rect(1220, 340, 140, 8),
+
+            # 4. række (4 platforme)
+            pygame.Rect(40, 460, 120, 8),
+            pygame.Rect(370, 460, 160, 8),
+            pygame.Rect(970, 460, 160, 8),
+            pygame.Rect(1300, 460, 120, 8),
+
+            # 5. række (3 platforme)
+            pygame.Rect(180, 580, 140, 8),
+            pygame.Rect(680, 580, 140, 8),
+            pygame.Rect(1180, 580, 140, 8),
+
+            # 6. række (4 platforme)
+            pygame.Rect(60, 700, 120, 8),
+            pygame.Rect(400, 700, 160, 8),
+            pygame.Rect(940, 700, 160, 8),
+            pygame.Rect(1280, 700, 120, 8),
+
+            # 7. række (3 platforme)
+            pygame.Rect(180, 800, 140, 8),
+            pygame.Rect(680, 800, 140, 8),
+            pygame.Rect(1180, 800, 140, 8),
         ]
 
-    def draw_walls(self):
-        """Tegner alle vægge."""
-        for wall in self.walls:
-            x1, y1, x2, y2 = wall
-            self.canvas.create_rectangle(
-                x1, y1, x2, y2,
-                fill="saddlebrown", outline="black", width=2
-            )
+    def draw_background(self, screen):
+        screen.fill((215, 215, 215))
 
-    def is_blocked(self, x, y, size=30):
-        """
-        Tjekker om en spiller rammer en væg.
-        x og y er spillerens øverste venstre hjørne.
-        """
-        player_left = x
-        player_top = y
-        player_right = x + size
-        player_bottom = y + size
+    def draw_platforms(self, screen):
+        for platform in self.platforms:
+            pygame.draw.rect(screen, (0, 0, 0), platform)
 
-        for wall in self.walls:
-            wall_left, wall_top, wall_right, wall_bottom = wall
+    def draw(self, screen):
+        self.draw_background(screen)
+        self.draw_platforms(screen)
 
-            overlap = (
-                player_right > wall_left and
-                player_left < wall_right and
-                player_bottom > wall_top and
-                player_top < wall_bottom
-            )
 
-            if overlap:
-                return True
+if __name__ == "__main__":
+    pygame.init()
 
-        return False
+    screen_width = 1500
+    screen_height = 900
+    screen = pygame.display.set_mode((screen_width, screen_height))
+    pygame.display.set_caption("Map Preview")
+
+    clock = pygame.time.Clock()
+    game_map = GameMap(screen_width, screen_height)
+
+    running = True
+    while running:
+        clock.tick(60)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        game_map.draw(screen)
+        pygame.display.update()
+
+    pygame.quit()
