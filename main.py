@@ -1,6 +1,7 @@
 import pygame
 from map import GameMap
 from player import Player
+from weapons import WeaponDrop
 
 
 class Button:
@@ -83,7 +84,7 @@ class GameApp:
     def __init__(self):
         pygame.init()
 
-        self.screen_width = 1500
+        self.screen_width = 1600
         self.screen_height = 900
         self.screen = pygame.display.set_mode((self.screen_width, self.screen_height))
         pygame.display.set_caption("Multiplayer Game")
@@ -95,6 +96,7 @@ class GameApp:
         self.title_font = pygame.font.SysFont("arial", 56, bold=True)
         self.button_font = pygame.font.SysFont("arial", 28)
         self.text_font = pygame.font.SysFont("arial", 30)
+        self.small_font = pygame.font.SysFont("arial", 22)
 
         center_x = self.screen_width // 2
         button_width = 320
@@ -113,6 +115,7 @@ class GameApp:
 
         self.game_map = None
         self.player = None
+        self.weapon_drop = None
 
     def start_game(self):
         self.game_map = GameMap(self.screen_width, self.screen_height)
@@ -123,7 +126,12 @@ class GameApp:
         spawn_y = self.game_map.floor.top - player_height
 
         self.player = Player(spawn_x, spawn_y, player_width, player_height, (255, 255, 255))
+        self.weapon_drop = WeaponDrop(self.screen_width)
+
         self.state = "game"
+
+    def spawn_new_weapon(self):
+        self.weapon_drop = WeaponDrop(self.screen_width)
 
     def draw_menu(self):
         self.screen.fill((25, 25, 25))
@@ -151,6 +159,18 @@ class GameApp:
         self.game_map.draw(self.screen)
         self.player.draw(self.screen)
 
+        if self.weapon_drop is not None:
+            self.weapon_drop.draw(self.screen)
+
+        if self.player.current_weapon is None:
+            weapon_text = self.small_font.render("Weapon: None", True, (0, 0, 0))
+        else:
+            weapon_text = self.small_font.render(
+                f"Weapon: {self.player.current_weapon}", True, (0, 0, 0)
+            )
+
+        self.screen.blit(weapon_text, (20, 20))
+
     def handle_menu_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
             if self.join_button.is_clicked(event.pos):
@@ -176,6 +196,13 @@ class GameApp:
     def update_game(self):
         keys = pygame.key.get_pressed()
         self.player.move(keys, self.game_map.platforms, self.screen_width, self.screen_height)
+
+        if self.weapon_drop is not None:
+            self.weapon_drop.update(self.game_map.floor)
+
+            if self.weapon_drop.is_picked_up(self.player):
+                self.player.pick_up_weapon(self.weapon_drop)
+                self.spawn_new_weapon()
 
     def run(self):
         while self.running:

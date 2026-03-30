@@ -17,6 +17,8 @@ class Player:
         self.y_velocity = 0
         self.on_ground = False
 
+        self.current_weapon = None
+
     def draw(self, win):
         pygame.draw.rect(win, self.color, self.rect)
 
@@ -80,5 +82,9 @@ class Player:
             self.y_velocity = 0
             self.on_ground = True
 
+    def pick_up_weapon(self, weapon):
+        self.current_weapon = weapon.name
+
     def shoot(self):
-        pass
+        if self.current_weapon is not None:
+            print("Player shoots with", self.current_weapon)
