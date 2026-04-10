@@ -50,6 +50,7 @@ class Weapon:
         self.reload_speed = reload_speed
         self.ammo_capacity = ammo_capacity
 
+
 # Hjælpefunktion til JSON-filen om Weapons_Data
 def create_weapon_from_json(name):
     for weapon in weapon_data_list:
@@ -79,6 +80,10 @@ def create_sniper():
     return create_weapon_from_json("Sniper")
 
 
+def create_shotgun():
+    return create_weapon_from_json("Shotgun")
+
+
 class WeaponDrop:
     def __init__(self, screen_width):
         self.width = 30
@@ -90,13 +95,16 @@ class WeaponDrop:
 
         self.weapon = random.choice([
             create_handgun(),
-            create_sniper()
+            create_sniper(),
+            create_shotgun()
         ])
 
         if self.weapon.name == "Handgun":
             self.color = (200, 50, 50)   # rød
-        else:
+        elif self.weapon.name == "Sniper":
             self.color = (50, 80, 200)   # blå
+        else:
+            self.color = (210, 140, 40)  # orange
 
         self.y_velocity = 0
         self.gravity = 0.3
@@ -121,7 +129,7 @@ class WeaponDrop:
 
 
 class Projectile:
-    def __init__(self, x, y, direction, weapon):
+    def __init__(self, x, y, direction, weapon, spread=0):
         self.size = weapon.projectile_size
         self.rect = pygame.Rect(x, y, self.size, self.size)
 
@@ -131,15 +139,20 @@ class Projectile:
         self.max_distance = weapon.projectile_range
 
         self.distance_travelled = 0
+        self.y_speed = spread
 
         if weapon.name == "Sniper":
             self.color = (40, 40, 180)
+        elif weapon.name == "Shotgun":
+            self.color = (180, 120, 20)
         else:
             self.color = (200, 0, 0)
 
     def update(self):
         move_x = self.speed * self.direction
         self.rect.x += move_x
+        self.rect.y += self.y_speed
+
         self.distance_travelled += abs(move_x)
 
     def draw(self, screen):

@@ -15,7 +15,7 @@
     },
     {
       "name": "Sniper",
-      "fire_rate": 1000,
+      "fire_rate": 900,
       "projectile": {
         "speed": 18,
         "size": 12,
@@ -25,6 +25,19 @@
       },
       "reload_speed": 1800,
       "ammo_capacity": 5
+    },
+    {
+      "name": "Shotgun",
+      "fire_rate": 700,
+      "projectile": {
+        "speed": 14,
+        "size": 6,
+        "range": 260,
+        "count": 5,
+        "damage": 28
+      },
+      "reload_speed": 1200,
+      "ammo_capacity": 6
     }
   ]
 }

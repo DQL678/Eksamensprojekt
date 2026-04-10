@@ -109,15 +109,33 @@ class Player:
 
     def try_shoot(self, current_time):
         if not self.can_shoot(current_time):
-            return None
+            return []
 
         self.last_shot_time = current_time
         self.ammo -= 1
 
-        return {
-            "x": self.rect.centerx,
-            "y": self.rect.centery
-        }
+        projectile_positions = []
+        count = self.current_weapon.projectile_count
+
+        center_x = self.rect.centerx
+        center_y = self.rect.centery
+
+        if count == 1:
+            projectile_positions.append({
+                "x": center_x,
+                "y": center_y
+            })
+        else:
+            spacing = 10
+            start_y = center_y - ((count - 1) * spacing) // 2
+
+            for i in range(count):
+                projectile_positions.append({
+                    "x": center_x,
+                    "y": start_y + i * spacing
+                })
+
+        return projectile_positions
 
     def start_reload(self, current_time):
         if self.current_weapon is None:

@@ -100,7 +100,6 @@ class GameApp:
 
         self.resize_ui()
 
-        # Game objects
         self.game_map = None
         self.player = None
         self.weapon_drop = None
@@ -172,11 +171,24 @@ class GameApp:
             return
 
         now = pygame.time.get_ticks()
-        data = self.player.try_shoot(now)
+        projectile_data_list = self.player.try_shoot(now)
 
-        if data:
+        count = len(projectile_data_list)
+
+        for i, data in enumerate(projectile_data_list):
+            if self.player.current_weapon.name == "Shotgun":
+                spread = (i - count // 2) * 2
+            else:
+                spread = 0
+
             self.projectiles.append(
-                Projectile(data["x"], data["y"], self.player.direction, self.player.current_weapon)
+                Projectile(
+                    data["x"],
+                    data["y"],
+                    self.player.direction,
+                    self.player.current_weapon,
+                    spread
+                )
             )
 
     def update_projectiles(self):
@@ -299,7 +311,6 @@ class GameApp:
 
                 elif self.state == "settings":
                     self.music_slider.handle_event(event)
-
                     self.sfx_slider.handle_event(event)
 
                     if event.type == pygame.MOUSEBUTTONDOWN:
