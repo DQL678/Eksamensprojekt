@@ -1,5 +1,30 @@
 import pygame
 import random
+import json
+import os
+
+
+def load_weapon_data():
+    folder = os.path.dirname(__file__)
+
+    possible_filenames = [
+        "Weapons_Data.json",
+        "Weapons_Data"
+    ]
+
+    for filename in possible_filenames:
+        filepath = os.path.join(folder, filename)
+
+        if os.path.exists(filepath):
+            with open(filepath, "r", encoding="utf-8") as file:
+                return json.load(file)["weapons"]
+
+    raise FileNotFoundError(
+        "Could not find Weapons_Data.json or Weapons_Data in the same folder as weapons.py"
+    )
+
+
+weapon_data_list = load_weapon_data()
 
 
 class Weapon:
@@ -25,19 +50,33 @@ class Weapon:
         self.reload_speed = reload_speed
         self.ammo_capacity = ammo_capacity
 
+# Hjælpefunktion til JSON-filen om Weapons_Data
+def create_weapon_from_json(name):
+    for weapon in weapon_data_list:
+        if weapon["name"] == name:
+            projectile = weapon["projectile"]
+
+            return Weapon(
+                name=weapon["name"],
+                fire_rate=weapon["fire_rate"],
+                projectile_speed=projectile["speed"],
+                projectile_size=projectile["size"],
+                projectile_range=projectile["range"],
+                projectile_count=projectile["count"],
+                projectile_damage=projectile["damage"],
+                reload_speed=weapon["reload_speed"],
+                ammo_capacity=weapon["ammo_capacity"]
+            )
+
+    raise ValueError(f"Våbnet '{name}' blev ikke fundet i JSON-filen.")
+
 
 def create_handgun():
-    return Weapon(
-        name="Handgun",
-        fire_rate=300,
-        projectile_speed=12,
-        projectile_size=8,
-        projectile_range=500,
-        projectile_count=1,
-        projectile_damage=20,
-        reload_speed=1200,
-        ammo_capacity=12
-    )
+    return create_weapon_from_json("Handgun")
+
+
+def create_sniper():
+    return create_weapon_from_json("Sniper")
 
 
 class WeaponDrop:
@@ -47,15 +86,21 @@ class WeaponDrop:
 
         self.x = random.randint(50, screen_width - 50)
         self.y = -40
-
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
-        self.color = (200, 50, 50)
-        self.weapon = create_handgun()
+        self.weapon = random.choice([
+            create_handgun(),
+            create_sniper()
+        ])
+
+        if self.weapon.name == "Handgun":
+            self.color = (200, 50, 50)   # rød
+        else:
+            self.color = (50, 80, 200)   # blå
 
         self.y_velocity = 0
-        self.gravity = 0.5
-        self.max_fall_speed = 12
+        self.gravity = 0.3
+        self.max_fall_speed = 8
 
     def update(self):
         self.y_velocity += self.gravity
@@ -86,7 +131,11 @@ class Projectile:
         self.max_distance = weapon.projectile_range
 
         self.distance_travelled = 0
-        self.color = (200, 0, 0)
+
+        if weapon.name == "Sniper":
+            self.color = (40, 40, 180)
+        else:
+            self.color = (200, 0, 0)
 
     def update(self):
         move_x = self.speed * self.direction
