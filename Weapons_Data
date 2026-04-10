@@ -1,0 +1,30 @@
+{
+  "weapons": [
+    {
+      "name": "Handgun",
+      "fire_rate": 300,
+      "projectile": {
+        "speed": 12,
+        "size": 8,
+        "range": 500,
+        "count": 1,
+        "damage": 20
+      },
+      "reload_speed": 1200,
+      "ammo_capacity": 12
+    },
+    {
+      "name": "Sniper",
+      "fire_rate": 900,
+      "projectile": {
+        "speed": 18,
+        "size": 12,
+        "range": 900,
+        "count": 1,
+        "damage": 45
+      },
+      "reload_speed": 1800,
+      "ammo_capacity": 5
+    }
+  ]
+}
