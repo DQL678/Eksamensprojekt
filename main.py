@@ -1,7 +1,7 @@
 import pygame
 from map import GameMap
 from player import Player
-from weapons import WeaponDrop
+from weapons import WeaponDrop, Projectile
 
 
 class Button:
@@ -75,7 +75,6 @@ class Slider:
         screen.blit(text_surface, text_rect)
 
         pygame.draw.rect(screen, (170, 170, 170), self.bar_rect)
-
         handle_x = self.get_handle_x()
         pygame.draw.circle(screen, (240, 240, 240), (handle_x, self.y + 3), self.handle_radius)
 
@@ -109,33 +108,38 @@ class GameApp:
 
         slider_width = 420
         slider_x = center_x - slider_width // 2
-
         self.music_slider = Slider(slider_x, 320, slider_width, 0, 100, 50, "Music volume")
         self.sfx_slider = Slider(slider_x, 430, slider_width, 0, 100, 50, "SFX volume")
 
         self.game_map = None
         self.player = None
         self.weapon_drop = None
+        self.projectiles = []
+
+        self.weapon_delay = 5000
+        self.last_weapon_removed_time = 0
 
     def start_game(self):
         self.game_map = GameMap(self.screen_width, self.screen_height)
 
-        player_width = 40
-        player_height = 60
-        spawn_x = 100
-        spawn_y = self.game_map.floor.top - player_height
+        spawn = self.game_map.spawn_points[0]
+        self.player = Player(spawn[0], spawn[1], 40, 60, (255, 255, 255))
 
-        self.player = Player(spawn_x, spawn_y, player_width, player_height, (255, 255, 255))
-        self.weapon_drop = WeaponDrop(self.screen_width)
+        self.weapon_drop = None
+        self.projectiles = []
+        self.last_weapon_removed_time = pygame.time.get_ticks()
 
         self.state = "game"
 
     def spawn_new_weapon(self):
         self.weapon_drop = WeaponDrop(self.screen_width)
 
+    def remove_weapon_and_start_delay(self):
+        self.weapon_drop = None
+        self.last_weapon_removed_time = pygame.time.get_ticks()
+
     def draw_menu(self):
         self.screen.fill((25, 25, 25))
-
         title = self.title_font.render("Menu", True, (255, 255, 255))
         title_rect = title.get_rect(center=(self.screen_width // 2, 200))
         self.screen.blit(title, title_rect)
@@ -146,7 +150,6 @@ class GameApp:
 
     def draw_settings(self):
         self.screen.fill((35, 35, 50))
-
         title = self.title_font.render("Settings", True, (255, 255, 255))
         title_rect = title.get_rect(center=(self.screen_width // 2, 180))
         self.screen.blit(title, title_rect)
@@ -155,6 +158,23 @@ class GameApp:
         self.sfx_slider.draw(self.screen, self.text_font)
         self.back_button.draw(self.screen, self.button_font)
 
+    def draw_game_info(self):
+        hp_text = self.small_font.render(
+            f"HP: {self.player.hitpoints}   Lives: {self.player.lives}",
+            True, (0, 0, 0)
+        )
+
+        if self.player.current_weapon is None:
+            weapon_text = self.small_font.render("Weapon: None   Ammo: 0", True, (0, 0, 0))
+        else:
+            weapon_text = self.small_font.render(
+                f"Weapon: {self.player.current_weapon.name}   Ammo: {self.player.ammo}",
+                True, (0, 0, 0)
+            )
+
+        self.screen.blit(hp_text, (20, 20))
+        self.screen.blit(weapon_text, (20, 50))
+
     def draw_game(self):
         self.game_map.draw(self.screen)
         self.player.draw(self.screen)
@@ -162,14 +182,10 @@ class GameApp:
         if self.weapon_drop is not None:
             self.weapon_drop.draw(self.screen)
 
-        if self.player.current_weapon is None:
-            weapon_text = self.small_font.render("Weapon: None", True, (0, 0, 0))
-        else:
-            weapon_text = self.small_font.render(
-                f"Weapon: {self.player.current_weapon}", True, (0, 0, 0)
-            )
+        for projectile in self.projectiles:
+            projectile.draw(self.screen)
 
-        self.screen.blit(weapon_text, (20, 20))
+        self.draw_game_info()
 
     def handle_menu_events(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -188,21 +204,77 @@ class GameApp:
             if self.back_button.is_clicked(event.pos):
                 self.state = "menu"
 
+    def create_projectile(self):
+        if self.player is None:
+            return
+
+        current_time = pygame.time.get_ticks()
+        projectile_data = self.player.try_shoot(current_time)
+
+        if projectile_data is not None:
+            projectile = Projectile(
+                projectile_data["x"],
+                projectile_data["y"],
+                self.player.direction,
+                self.player.current_weapon
+            )
+            self.projectiles.append(projectile)
+
     def handle_game_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.state = "menu"
 
-    def update_game(self):
-        keys = pygame.key.get_pressed()
-        self.player.move(keys, self.game_map.platforms, self.screen_width, self.screen_height)
+            if event.key == pygame.K_r:
+                self.player.start_reload(pygame.time.get_ticks())
 
-        if self.weapon_drop is not None:
-            self.weapon_drop.update(self.game_map.floor)
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.button == 1:
+                self.create_projectile()
+
+    def update_weapon_system(self):
+        current_time = pygame.time.get_ticks()
+
+        if self.weapon_drop is None:
+            if current_time - self.last_weapon_removed_time >= self.weapon_delay:
+                self.spawn_new_weapon()
+        else:
+            self.weapon_drop.update()
 
             if self.weapon_drop.is_picked_up(self.player):
                 self.player.pick_up_weapon(self.weapon_drop)
-                self.spawn_new_weapon()
+                self.remove_weapon_and_start_delay()
+
+            elif self.weapon_drop.is_out_of_map(self.screen_height):
+                self.remove_weapon_and_start_delay()
+
+    def update_projectiles(self):
+        projectiles_to_remove = []
+
+        for projectile in self.projectiles:
+            projectile.update()
+
+            if projectile.has_reached_max_range():
+                projectiles_to_remove.append(projectile)
+                continue
+
+            for platform in self.game_map.platforms:
+                if projectile.rect.colliderect(platform):
+                    projectiles_to_remove.append(projectile)
+                    break
+
+        for projectile in projectiles_to_remove:
+            if projectile in self.projectiles:
+                self.projectiles.remove(projectile)
+
+    def update_game(self):
+        keys = pygame.key.get_pressed()
+
+        self.player.move(keys, self.game_map.platforms, self.screen_width, self.screen_height)
+        self.player.update_reload(pygame.time.get_ticks())
+
+        self.update_weapon_system()
+        self.update_projectiles()
 
     def run(self):
         while self.running:

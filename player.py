@@ -17,7 +17,17 @@ class Player:
         self.y_velocity = 0
         self.on_ground = False
 
+        self.direction = 1
+
         self.current_weapon = None
+        self.ammo = 0
+        self.is_reloading = False
+        self.reload_start_time = 0
+        self.last_shot_time = 0
+
+        self.max_hitpoints = 100
+        self.hitpoints = 100
+        self.lives = 3
 
     def draw(self, win):
         pygame.draw.rect(win, self.color, self.rect)
@@ -27,9 +37,11 @@ class Player:
 
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             move_x = -self.vel
+            self.direction = -1
 
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
             move_x = self.vel
+            self.direction = 1
 
         if (keys[pygame.K_UP] or keys[pygame.K_w] or keys[pygame.K_SPACE]) and self.on_ground:
             self.y_velocity = -self.jump_strength
@@ -58,13 +70,11 @@ class Player:
 
         if self.rect.left < 0:
             self.rect.left = 0
-
         if self.rect.right > screen_width:
             self.rect.right = screen_width
 
     def move_vertical(self, platforms, screen_height):
         self.on_ground = False
-
         self.rect.y += int(self.y_velocity)
 
         for platform in platforms:
@@ -82,9 +92,49 @@ class Player:
             self.y_velocity = 0
             self.on_ground = True
 
-    def pick_up_weapon(self, weapon):
-        self.current_weapon = weapon.name
+    def pick_up_weapon(self, weapon_drop):
+        self.current_weapon = weapon_drop.weapon
+        self.ammo = self.current_weapon.ammo_capacity
+        self.is_reloading = False
 
-    def shoot(self):
-        if self.current_weapon is not None:
-            print("Player shoots with", self.current_weapon)
+    def can_shoot(self, current_time):
+        if self.current_weapon is None:
+            return False
+        if self.is_reloading:
+            return False
+        if self.ammo <= 0:
+            return False
+
+        return current_time - self.last_shot_time >= self.current_weapon.fire_rate
+
+    def try_shoot(self, current_time):
+        if not self.can_shoot(current_time):
+            return None
+
+        self.last_shot_time = current_time
+        self.ammo -= 1
+
+        return {
+            "x": self.rect.centerx,
+            "y": self.rect.centery
+        }
+
+    def start_reload(self, current_time):
+        if self.current_weapon is None:
+            return
+        if self.is_reloading:
+            return
+        if self.ammo == self.current_weapon.ammo_capacity:
+            return
+
+        self.is_reloading = True
+        self.reload_start_time = current_time
+
+    def update_reload(self, current_time):
+        if self.current_weapon is None:
+            return
+
+        if self.is_reloading:
+            if current_time - self.reload_start_time >= self.current_weapon.reload_speed:
+                self.ammo = self.current_weapon.ammo_capacity
+                self.is_reloading = False
