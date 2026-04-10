@@ -108,7 +108,7 @@ class WeaponDrop:
 
         self.y_velocity = 0
         self.gravity = 0.3
-        self.max_fall_speed = 8
+        self.max_fall_speed = 6
 
     def update(self):
         self.y_velocity += self.gravity
