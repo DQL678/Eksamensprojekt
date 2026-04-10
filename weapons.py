@@ -40,6 +40,20 @@ def create_handgun():
     )
 
 
+def create_sniper():
+    return Weapon(
+        name="Sniper",
+        fire_rate=1000,
+        projectile_speed=18,
+        projectile_size=12,
+        projectile_range=900,
+        projectile_count=1,
+        projectile_damage=45,
+        reload_speed=1800,
+        ammo_capacity=5
+    )
+
+
 class WeaponDrop:
     def __init__(self, screen_width):
         self.width = 30
@@ -47,15 +61,24 @@ class WeaponDrop:
 
         self.x = random.randint(50, screen_width - 50)
         self.y = -40
-
         self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
 
-        self.color = (200, 50, 50)
-        self.weapon = create_handgun()
+        # Tilfældig weapon type
+        self.weapon = random.choice([
+            create_handgun(),
+            create_sniper()
+        ])
+
+        # Farve til forskellige weapons
+        if self.weapon.name == "Handgun":
+            self.color = (200, 50, 50)   # rød
+        else:
+            self.color = (50, 80, 200)   # blå
+
 
         self.y_velocity = 0
-        self.gravity = 0.5
-        self.max_fall_speed = 12
+        self.gravity = 0.3
+        self.max_fall_speed = 8
 
     def update(self):
         self.y_velocity += self.gravity
@@ -86,7 +109,11 @@ class Projectile:
         self.max_distance = weapon.projectile_range
 
         self.distance_travelled = 0
-        self.color = (200, 0, 0)
+
+        if weapon.name == "Sniper":
+            self.color = (40, 40, 180)
+        else:
+            self.color = (200, 0, 0)
 
     def update(self):
         move_x = self.speed * self.direction
