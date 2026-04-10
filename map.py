@@ -20,48 +20,49 @@ class GameMap:
 
             # 1. række
             pygame.Rect(180, 100, 140, 8),
-            pygame.Rect(680, 100, 140, 8),
-            pygame.Rect(1180, 100, 140, 8),
+            pygame.Rect(700, 100, 200, 8),
+            pygame.Rect(1280, 100, 140, 8),
 
             # 2. række
             pygame.Rect(60, 220, 120, 8),
-            pygame.Rect(400, 220, 160, 8),
-            pygame.Rect(940, 220, 160, 8),
-            pygame.Rect(1280, 220, 120, 8),
+            pygame.Rect(420, 220, 160, 8),
+            pygame.Rect(1020, 220, 160, 8),
+            pygame.Rect(1380, 220, 120, 8),
 
             # 3. række
             pygame.Rect(140, 340, 140, 8),
-            pygame.Rect(680, 340, 140, 8),
-            pygame.Rect(1220, 340, 140, 8),
+            pygame.Rect(700, 340, 200, 8),
+            pygame.Rect(1320, 340, 140, 8),
 
             # 4. række
             pygame.Rect(40, 460, 120, 8),
-            pygame.Rect(370, 460, 160, 8),
-            pygame.Rect(970, 460, 160, 8),
-            pygame.Rect(1300, 460, 120, 8),
+            pygame.Rect(390, 460, 160, 8),
+            pygame.Rect(1050, 460, 160, 8),
+            pygame.Rect(1400, 460, 120, 8),
 
             # 5. række
             pygame.Rect(180, 580, 140, 8),
-            pygame.Rect(680, 580, 140, 8),
-            pygame.Rect(1180, 580, 140, 8),
+            pygame.Rect(700, 580, 200, 8),
+            pygame.Rect(1280, 580, 140, 8),
 
             # 6. række
             pygame.Rect(60, 700, 120, 8),
-            pygame.Rect(400, 700, 160, 8),
-            pygame.Rect(940, 700, 160, 8),
-            pygame.Rect(1280, 700, 120, 8),
+            pygame.Rect(420, 700, 160, 8),
+            pygame.Rect(1020, 700, 160, 8),
+            pygame.Rect(1380, 700, 120, 8),
 
             # 7. række
             pygame.Rect(180, 820, 140, 8),
-            pygame.Rect(680, 820, 140, 8),
-            pygame.Rect(1180, 820, 140, 8),
+            pygame.Rect(700, 820, 200, 8),
+            pygame.Rect(1280, 820, 140, 8),
         ]
+
 
     def create_spawn_points(self):
         self.spawn_points = [
             (100, self.floor.top - 60),
-            (700, 760),
-            (1200, 760),
+            (760, 760),
+            (1320, 760),
         ]
 
     def get_random_spawn_point(self):
