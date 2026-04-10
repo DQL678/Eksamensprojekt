@@ -15,7 +15,7 @@
     },
     {
       "name": "Sniper",
-      "fire_rate": 900,
+      "fire_rate": 1000,
       "projectile": {
         "speed": 18,
         "size": 12,
