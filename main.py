@@ -65,13 +65,18 @@ class Slider:
         self.value = int(self.min_value + percent * (self.max_value - self.min_value))
 
     def draw(self, screen, font):
-        text = font.render(f"{self.label}: {self.value}", True, (255, 255, 255))
-        screen.blit(text, (self.x, self.y - 30))
+        text_surface = font.render(f"{self.label}: {self.value}", True, (255, 255, 255))
+        text_rect = text_surface.get_rect(center=(self.x + self.width // 2, self.y - 30))
+        screen.blit(text_surface, text_rect)
 
         pygame.draw.rect(screen, (170, 170, 170), self.bar_rect)
-        pygame.draw.circle(screen, (240, 240, 240),
-                           (self.get_handle_x(), self.y + 3),
-                           self.handle_radius)
+        pygame.draw.circle(
+            screen,
+            (240, 240, 240),
+            (self.get_handle_x(), self.y + 3),
+            self.handle_radius
+        )
+
 
 class GameApp:
     def __init__(self):
@@ -80,7 +85,10 @@ class GameApp:
         self.screen_width = 1200
         self.screen_height = 700
 
-        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height), pygame.RESIZABLE)
+        self.screen = pygame.display.set_mode(
+            (self.screen_width, self.screen_height),
+            pygame.RESIZABLE
+        )
         pygame.display.set_caption("Multiplayer Game")
 
         self.clock = pygame.time.Clock()
@@ -92,7 +100,7 @@ class GameApp:
 
         self.resize_ui()
 
-        # game objects
+        # Game objects
         self.game_map = None
         self.player = None
         self.weapon_drop = None
@@ -116,13 +124,13 @@ class GameApp:
         self.join_button = Button(cx - bw // 2, int(self.screen_height * 0.30), bw, bh, "Join Game")
         self.settings_button = Button(cx - bw // 2, int(self.screen_height * 0.42), bw, bh, "Settings")
         self.quit_button = Button(cx - bw // 2, int(self.screen_height * 0.54), bw, bh, "Quit")
-        self.back_button = Button(cx - bw // 2, int(self.screen_height * 0.70), bw, bh, "Back")
+        self.back_button = Button(cx - bw // 2, int(self.screen_height * 0.70), bw, bh, "Tilbage")
 
         sw = int(self.screen_width * 0.3)
         sx = cx - sw // 2
 
-        self.music_slider = Slider(sx, int(self.screen_height * 0.35), sw, 0, 100, 50, "Music")
-        self.sfx_slider = Slider(sx, int(self.screen_height * 0.48), sw, 0, 100, 50, "SFX")
+        self.music_slider = Slider(sx, int(self.screen_height * 0.40), sw, 0, 100, 50, "Music volume")
+        self.sfx_slider = Slider(sx, int(self.screen_height * 0.53), sw, 0, 100, 50, "SFX volume")
 
     def start_game(self):
         self.game_map = GameMap(self.base_width, self.base_height)
@@ -174,21 +182,21 @@ class GameApp:
     def update_projectiles(self):
         remove = []
 
-        for p in self.projectiles:
-            p.update()
+        for projectile in self.projectiles:
+            projectile.update()
 
-            if p.has_reached_max_range():
-                remove.append(p)
+            if projectile.has_reached_max_range():
+                remove.append(projectile)
                 continue
 
             for plat in self.game_map.platforms:
-                if p.rect.colliderect(plat):
-                    remove.append(p)
+                if projectile.rect.colliderect(plat):
+                    remove.append(projectile)
                     break
 
-        for p in remove:
-            if p in self.projectiles:
-                self.projectiles.remove(p)
+        for projectile in remove:
+            if projectile in self.projectiles:
+                self.projectiles.remove(projectile)
 
     def update_game(self):
         keys = pygame.key.get_pressed()
@@ -208,8 +216,8 @@ class GameApp:
         if self.weapon_drop:
             self.weapon_drop.draw(surface)
 
-        for p in self.projectiles:
-            p.draw(surface)
+        for projectile in self.projectiles:
+            projectile.draw(surface)
 
         scaled = pygame.transform.scale(surface, (self.screen_width, self.screen_height))
         self.screen.blit(scaled, (0, 0))
@@ -235,12 +243,22 @@ class GameApp:
 
     def draw_menu(self):
         self.screen.fill((25, 25, 25))
+
+        title = self.title_font.render("Menu", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.18)))
+        self.screen.blit(title, title_rect)
+
         self.join_button.draw(self.screen, self.button_font)
         self.settings_button.draw(self.screen, self.button_font)
         self.quit_button.draw(self.screen, self.button_font)
 
     def draw_settings(self):
         self.screen.fill((40, 40, 60))
+
+        title = self.title_font.render("Settings", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.16)))
+        self.screen.blit(title, title_rect)
+
         self.music_slider.draw(self.screen, self.text_font)
         self.sfx_slider.draw(self.screen, self.text_font)
         self.back_button.draw(self.screen, self.button_font)
@@ -281,6 +299,7 @@ class GameApp:
 
                 elif self.state == "settings":
                     self.music_slider.handle_event(event)
+
                     self.sfx_slider.handle_event(event)
 
                     if event.type == pygame.MOUSEBUTTONDOWN:
