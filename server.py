@@ -57,3 +57,15 @@ def handle_client(conn, addr, player_id):
                 del players[player_id]
 
         conn.close()
+
+while True:
+    conn, addr = server.accept()
+
+    player_id = next_player_id
+    next_player_id += 1
+
+    thread = threading.Thread(
+        target=handle_client,
+        args=(conn, addr, player_id)
+    )
+    thread.start()
