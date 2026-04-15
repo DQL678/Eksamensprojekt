@@ -51,7 +51,6 @@ class Weapon:
         self.ammo_capacity = ammo_capacity
 
 
-# Hjælpefunktion til JSON-filen om Weapons_Data
 def create_weapon_from_json(name):
     for weapon in weapon_data_list:
         if weapon["name"] == name:
@@ -88,6 +87,10 @@ def create_assault_rifle():
     return create_weapon_from_json("Assault Rifle")
 
 
+def create_minigun():
+    return create_weapon_from_json("Minigun")
+
+
 class WeaponDrop:
     def __init__(self, screen_width):
         self.width = 30
@@ -101,21 +104,24 @@ class WeaponDrop:
             create_handgun(),
             create_sniper(),
             create_shotgun(),
-            create_assault_rifle()
+            create_assault_rifle(),
+            create_minigun()
         ])
 
         if self.weapon.name == "Handgun":
-            self.color = (200, 50, 50)   # rød
+            self.color = (200, 50, 50)      # rød
         elif self.weapon.name == "Sniper":
-            self.color = (50, 80, 200)   # blå
+            self.color = (50, 80, 200)      # blå
         elif self.weapon.name == "Shotgun":
-            self.color = (210, 140, 40)  # orange
+            self.color = (210, 140, 40)     # orange
+        elif self.weapon.name == "Assault Rifle":
+            self.color = (50, 170, 90)      # grøn
         else:
-            self.color = (50, 170, 90)   # grøn
+            self.color = (130, 40, 150)     # lilla
 
         self.y_velocity = 0
-        self.gravity = 0.3
-        self.max_fall_speed = 6
+        self.gravity = 0.25
+        self.max_fall_speed = 6.5
 
     def update(self):
         self.y_velocity += self.gravity
@@ -154,6 +160,8 @@ class Projectile:
             self.color = (180, 120, 20)
         elif weapon.name == "Assault Rifle":
             self.color = (40, 150, 70)
+        elif weapon.name == "Minigun":
+            self.color = (130, 40, 150)
         else:
             self.color = (200, 0, 0)
 

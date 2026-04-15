@@ -51,6 +51,19 @@
       },
       "reload_speed": 1500,
       "ammo_capacity": 24
+    },
+    {
+      "name": "Minigun",
+      "fire_rate": 70,
+      "projectile": {
+        "speed": 19,
+        "size": 4,
+        "range": 700,
+        "count": 1,
+        "damage": 12
+      },
+      "reload_speed": 2200,
+      "ammo_capacity": 60
     }
   ]
 }

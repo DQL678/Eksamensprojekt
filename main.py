@@ -108,6 +108,8 @@ class GameApp:
         self.weapon_delay = 5000
         self.last_weapon_removed_time = 0
 
+        self.mouse_held = False
+
     def resize_ui(self):
         scale = max(0.6, min(self.screen_height / 900, 1.5))
 
@@ -140,6 +142,7 @@ class GameApp:
         self.weapon_drop = None
         self.projectiles = []
         self.last_weapon_removed_time = pygame.time.get_ticks()
+        self.mouse_held = False
 
         self.state = "game"
 
@@ -191,6 +194,17 @@ class GameApp:
                 )
             )
 
+    def update_auto_fire(self):
+        if not self.player:
+            return
+        if not self.mouse_held:
+            return
+        if self.player.current_weapon is None:
+            return
+
+        if self.player.current_weapon.name == "Minigun":
+            self.shoot()
+
     def update_projectiles(self):
         remove = []
 
@@ -217,6 +231,7 @@ class GameApp:
         self.player.update_reload(pygame.time.get_ticks())
 
         self.update_weapons()
+        self.update_auto_fire()
         self.update_projectiles()
 
     def draw_game(self):
@@ -285,7 +300,15 @@ class GameApp:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             if event.button == 1:
-                self.shoot()
+                self.mouse_held = True
+
+                if self.player.current_weapon is not None:
+                    if self.player.current_weapon.name != "Minigun":
+                        self.shoot()
+
+        if event.type == pygame.MOUSEBUTTONUP:
+            if event.button == 1:
+                self.mouse_held = False
 
     def run(self):
         while self.running:
