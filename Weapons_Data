@@ -38,6 +38,19 @@
       },
       "reload_speed": 1200,
       "ammo_capacity": 6
+    },
+    {
+      "name": "Assault Rifle",
+      "fire_rate": 180,
+      "projectile": {
+        "speed": 16,
+        "size": 5,
+        "range": 500,
+        "count": 1,
+        "damage": 24
+      },
+      "reload_speed": 1500,
+      "ammo_capacity": 24
     }
   ]
 }

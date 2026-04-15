@@ -84,6 +84,10 @@ def create_shotgun():
     return create_weapon_from_json("Shotgun")
 
 
+def create_assault_rifle():
+    return create_weapon_from_json("Assault Rifle")
+
+
 class WeaponDrop:
     def __init__(self, screen_width):
         self.width = 30
@@ -96,15 +100,18 @@ class WeaponDrop:
         self.weapon = random.choice([
             create_handgun(),
             create_sniper(),
-            create_shotgun()
+            create_shotgun(),
+            create_assault_rifle()
         ])
 
         if self.weapon.name == "Handgun":
             self.color = (200, 50, 50)   # rød
         elif self.weapon.name == "Sniper":
             self.color = (50, 80, 200)   # blå
-        else:
+        elif self.weapon.name == "Shotgun":
             self.color = (210, 140, 40)  # orange
+        else:
+            self.color = (50, 170, 90)   # grøn
 
         self.y_velocity = 0
         self.gravity = 0.3
@@ -145,6 +152,8 @@ class Projectile:
             self.color = (40, 40, 180)
         elif weapon.name == "Shotgun":
             self.color = (180, 120, 20)
+        elif weapon.name == "Assault Rifle":
+            self.color = (40, 150, 70)
         else:
             self.color = (200, 0, 0)
 
