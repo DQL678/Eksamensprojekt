@@ -38,7 +38,11 @@ class Weapon:
         projectile_count,
         projectile_damage,
         reload_speed,
-        ammo_capacity
+        ammo_capacity,
+        special_type=None,
+        special_duration=0,
+        image=None,
+        image_size=None
     ):
         self.name = name
         self.fire_rate = fire_rate
@@ -49,13 +53,49 @@ class Weapon:
         self.projectile_damage = projectile_damage
         self.reload_speed = reload_speed
         self.ammo_capacity = ammo_capacity
+        self.special_type = special_type
+        self.special_duration = special_duration
+        self.image = image
+        self.image_size = image_size
 
+BASE_DIR = os.path.dirname(__file__)
+WEAPON_FOLDER = os.path.join(BASE_DIR, "Weapons")
+WEAPON_IMAGES = {}
+
+def load_weapon_images():
+    global WEAPON_IMAGES
+
+    WEAPON_IMAGES = {
+        "Handgun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Handgun.png")).convert_alpha(),
+        "Sniper": pygame.image.load(os.path.join(WEAPON_FOLDER, "Sniper.png")).convert_alpha(),
+        "Shotgun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Shotgun.png")).convert_alpha(),
+        "Assault Rifle": pygame.image.load(os.path.join(WEAPON_FOLDER, "Assault_Rifle.png")).convert_alpha(),
+        "Minigun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Minigun.png")).convert_alpha(),
+        "Freeze Gun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Freeze_Gun.png")).convert_alpha(),
+    }
 
 def create_weapon_from_json(name):
+
     for weapon in weapon_data_list:
         if weapon["name"] == name:
             projectile = weapon["projectile"]
 
+            special = weapon.get("special", {})
+            special_type = special.get("type")
+            special_duration = special.get("duration", 0)
+
+            image = WEAPON_IMAGES.get(weapon["name"])
+            # custom sizes
+            image_sizes = {
+                "Handgun": (60, 50),
+                "Sniper": (120, 30),
+                "Shotgun": (100, 25),
+                "Assault Rifle": (130, 55),
+                "Minigun": (100, 40),
+                "Freeze Gun": (80, 45),
+            }
+
+            size = image_sizes.get(weapon["name"], (50, 30))
             return Weapon(
                 name=weapon["name"],
                 fire_rate=weapon["fire_rate"],
@@ -65,7 +105,11 @@ def create_weapon_from_json(name):
                 projectile_count=projectile["count"],
                 projectile_damage=projectile["damage"],
                 reload_speed=weapon["reload_speed"],
-                ammo_capacity=weapon["ammo_capacity"]
+                ammo_capacity=weapon["ammo_capacity"],
+                special_type=special_type,
+                special_duration=special_duration,
+                image=image,
+                image_size=size
             )
 
     raise ValueError(f"Våbnet '{name}' blev ikke fundet i JSON-filen.")
@@ -91,6 +135,10 @@ def create_minigun():
     return create_weapon_from_json("Minigun")
 
 
+def create_freeze_gun():
+    return create_weapon_from_json("Freeze Gun")
+
+
 class WeaponDrop:
     def __init__(self, screen_width):
         self.width = 30
@@ -105,23 +153,26 @@ class WeaponDrop:
             create_sniper(),
             create_shotgun(),
             create_assault_rifle(),
-            create_minigun()
+            create_minigun(),
+            create_freeze_gun()
         ])
 
         if self.weapon.name == "Handgun":
-            self.color = (200, 50, 50)      # rød
+            self.color = (200, 50, 50)       # rød
         elif self.weapon.name == "Sniper":
-            self.color = (50, 80, 200)      # blå
+            self.color = (50, 80, 200)       # blå
         elif self.weapon.name == "Shotgun":
-            self.color = (210, 140, 40)     # orange
+            self.color = (210, 140, 40)      # orange
         elif self.weapon.name == "Assault Rifle":
-            self.color = (50, 170, 90)      # grøn
+            self.color = (50, 170, 90)       # grøn
+        elif self.weapon.name == "Minigun":
+            self.color = (130, 40, 150)      # lilla
         else:
-            self.color = (130, 40, 150)     # lilla
+            self.color = (80, 220, 255)      # lyseblå
 
         self.y_velocity = 0
-        self.gravity = 0.25
-        self.max_fall_speed = 6.5
+        self.gravity = 0.3
+        self.max_fall_speed = 8
 
     def update(self):
         self.y_velocity += self.gravity
@@ -132,7 +183,15 @@ class WeaponDrop:
         self.rect.y += int(self.y_velocity)
 
     def draw(self, screen):
-        pygame.draw.rect(screen, self.color, self.rect)
+        if self.weapon.image:
+            w, h = self.weapon.image_size
+
+            img = pygame.transform.scale(self.weapon.image, (w, h))
+
+            rect = img.get_rect(center=self.rect.center)
+            screen.blit(img, rect)
+        else:
+            pygame.draw.rect(screen, self.color, self.rect)
 
     def is_picked_up(self, player):
         return self.rect.colliderect(player.rect)
@@ -154,6 +213,9 @@ class Projectile:
         self.distance_travelled = 0
         self.y_speed = spread
 
+        self.special_type = weapon.special_type
+        self.special_duration = weapon.special_duration
+
         if weapon.name == "Sniper":
             self.color = (40, 40, 180)
         elif weapon.name == "Shotgun":
@@ -162,6 +224,8 @@ class Projectile:
             self.color = (40, 150, 70)
         elif weapon.name == "Minigun":
             self.color = (130, 40, 150)
+        elif weapon.name == "Freeze Gun":
+            self.color = (80, 220, 255)
         else:
             self.color = (200, 0, 0)
 

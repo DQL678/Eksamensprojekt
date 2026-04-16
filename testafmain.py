@@ -112,7 +112,6 @@ class GameApp:
         self.network = None
         self.other_players = {}
         self.my_id = None
-        self.shared_weapon_drop = None
 
     def resize_ui(self):
         scale = max(0.6, min(self.screen_height / 900, 1.5))
@@ -147,7 +146,7 @@ class GameApp:
         self.projectiles = []
         self.last_weapon_removed_time = pygame.time.get_ticks()
 
-        self.network = NetworkClient("192.168.1.126")
+        self.network = NetworkClient("127.0.0.1")
 
         self.state = "game"
 
@@ -231,7 +230,6 @@ class GameApp:
 
         self.other_players = response["players"]
         self.my_id = response["your_id"]
-        self.shared_weapon_drop = response["weapon_drop"]
 
     def update_game(self):
         keys = pygame.key.get_pressed()
@@ -239,7 +237,7 @@ class GameApp:
         self.player.move(keys, self.game_map.platforms, self.base_width, self.base_height)
         self.player.update_reload(pygame.time.get_ticks())
 
-        # self.update_weapons()
+        self.update_weapons()
         self.update_projectiles()
 
         self.update_network()
@@ -250,17 +248,8 @@ class GameApp:
         self.game_map.draw(surface)
         self.player.draw(surface)
 
-        if self.shared_weapon_drop:
-            pygame.draw.rect(
-                surface,
-                (255, 100, 0),
-                (
-                    self.shared_weapon_drop["x"],
-                    self.shared_weapon_drop["y"],
-                    30,
-                    20
-                )
-            )
+        if self.weapon_drop:
+            self.weapon_drop.draw(surface)
 
         for projectile in self.projectiles:
             projectile.draw(surface)

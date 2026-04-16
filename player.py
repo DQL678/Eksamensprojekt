@@ -1,6 +1,5 @@
 import pygame
 
-
 class Player:
     def __init__(self, x, y, width, height, color):
         self.x = x
@@ -22,30 +21,67 @@ class Player:
         self.current_weapon = None
         self.ammo = 0
         self.is_reloading = False
+        self.weapon_facing_right = True
         self.reload_start_time = 0
         self.last_shot_time = 0
+
 
         self.max_hitpoints = 100
         self.hitpoints = 100
         self.lives = 3
 
+        self.frozen_until = 0
+
     def draw(self, win):
+        # draw player
         pygame.draw.rect(win, self.color, self.rect)
 
+        # draw weapon
+        if self.current_weapon and self.current_weapon.image:
+            w, h = self.current_weapon.image_size
+
+            weapon_img = pygame.transform.scale(
+                self.current_weapon.image,
+                (w, h)
+            )
+            # flip if needed
+            if not self.weapon_facing_right:
+                weapon_img = pygame.transform.flip(weapon_img, True, False)
+
+            # position depends on facing direction
+            if self.weapon_facing_right:
+                x = self.rect.x + self.rect.width - 10
+            else:
+                x = self.rect.x - w + 10
+
+            y = self.rect.y + self.rect.height // 2 - h // 2
+
+            win.blit(weapon_img, (x, y))
+
+    def is_frozen(self, current_time):
+        return current_time < self.frozen_until
+
+    def freeze(self, duration_ms, current_time):
+        self.frozen_until = max(self.frozen_until, current_time + duration_ms)
+
     def move(self, keys, platforms, screen_width, screen_height):
+        current_time = pygame.time.get_ticks()
         move_x = 0
 
-        if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            move_x = -self.vel
-            self.direction = -1
+        if not self.is_frozen(current_time):
+            if keys[pygame.K_LEFT] or keys[pygame.K_a]:
+                move_x = -self.vel
+                self.direction = -1
+                self.weapon_facing_right = False
 
-        if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            move_x = self.vel
-            self.direction = 1
+            if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
+                move_x = self.vel
+                self.direction = 1
+                self.weapon_facing_right = True
 
-        if (keys[pygame.K_UP] or keys[pygame.K_w] or keys[pygame.K_SPACE]) and self.on_ground:
-            self.y_velocity = -self.jump_strength
-            self.on_ground = False
+            if (keys[pygame.K_UP] or keys[pygame.K_w] or keys[pygame.K_SPACE]) and self.on_ground:
+                self.y_velocity = -self.jump_strength
+                self.on_ground = False
 
         self.move_horizontal(move_x, platforms, screen_width)
 
@@ -156,3 +192,9 @@ class Player:
             if current_time - self.reload_start_time >= self.current_weapon.reload_speed:
                 self.ammo = self.current_weapon.ammo_capacity
                 self.is_reloading = False
+
+    def take_projectile_hit(self, projectile, current_time):
+        self.hitpoints -= projectile.damage
+
+        if projectile.special_type == "freeze":
+            self.freeze(projectile.special_duration, current_time)
