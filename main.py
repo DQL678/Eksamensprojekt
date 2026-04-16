@@ -89,7 +89,7 @@ class GameApp:
             (self.screen_width, self.screen_height),
             pygame.RESIZABLE
         )
-        pygame.display.set_caption("Multiplayer Game")
+        pygame.display.set_caption("Gun Man Game")
 
         self.clock = pygame.time.Clock()
         self.running = True
