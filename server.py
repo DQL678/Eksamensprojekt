@@ -1,11 +1,16 @@
 import socket
 import threading
 import json
+import random
+import time
 
 HOST = "0.0.0.0"
 PORT = 5555
 
 players = {}
+weapon_drop = None
+last_weapon_spawn = time.time()
+weapon_delay = 5
 next_player_id = 1
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -16,6 +21,25 @@ print("Server started...")
 
 lock = threading.Lock()
 
+def update_weapon_drop():
+    global weapon_drop, last_weapon_spawn
+
+    now = time.time()
+
+    if weapon_drop is None:
+        if now - last_weapon_spawn >= weapon_delay:
+            weapon_drop = {
+                "x": random.randint(50, 1550),
+                "y": 0,
+                "speed": 4
+            }
+            last_weapon_spawn = now
+    else:
+        weapon_drop["y"] += weapon_drop["speed"]
+
+        if weapon_drop["y"] > 900:
+            weapon_drop = None
+            last_weapon_spawn = now
 
 def handle_client(conn, addr, player_id):
     global players
@@ -41,9 +65,12 @@ def handle_client(conn, addr, player_id):
             with lock:
                 players[player_id] = player_data
 
+                update_weapon_drop()
+
                 response = {
                     "your_id": player_id,
-                    "players": players
+                    "players": players,
+                    "weapon_drop": weapon_drop
                 }
 
                 conn.send(json.dumps(response).encode())
