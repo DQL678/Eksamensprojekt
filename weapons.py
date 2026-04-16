@@ -87,12 +87,12 @@ def create_weapon_from_json(name):
             image = WEAPON_IMAGES.get(weapon["name"])
             # custom sizes
             image_sizes = {
-                "Handgun": (40, 25),
+                "Handgun": (60, 50),
                 "Sniper": (120, 30),
-                "Shotgun": (120, 25),
-                "Assault Rifle": (100, 40),
+                "Shotgun": (100, 25),
+                "Assault Rifle": (130, 55),
                 "Minigun": (100, 40),
-                "Freeze Gun": (50, 30),
+                "Freeze Gun": (80, 45),
             }
 
             size = image_sizes.get(weapon["name"], (50, 30))

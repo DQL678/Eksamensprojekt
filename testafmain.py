@@ -146,7 +146,7 @@ class GameApp:
         self.projectiles = []
         self.last_weapon_removed_time = pygame.time.get_ticks()
 
-        self.network = NetworkClient("127.0.0.1")
+        self.network = NetworkClient("10.147.138.19")
 
         self.state = "game"
 

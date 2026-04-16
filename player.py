@@ -21,8 +21,10 @@ class Player:
         self.current_weapon = None
         self.ammo = 0
         self.is_reloading = False
+        self.weapon_facing_right = True
         self.reload_start_time = 0
         self.last_shot_time = 0
+
 
         self.max_hitpoints = 100
         self.hitpoints = 100
@@ -42,12 +44,19 @@ class Player:
                 self.current_weapon.image,
                 (w, h)
             )
+            # flip if needed
+            if not self.weapon_facing_right:
+                weapon_img = pygame.transform.flip(weapon_img, True, False)
 
-            win.blit(
-                weapon_img,
-                (self.rect.x + self.rect.width - 10,
-                 self.rect.y + self.rect.height // 2 - h // 2)
-            )
+            # position depends on facing direction
+            if self.weapon_facing_right:
+                x = self.rect.x + self.rect.width - 10
+            else:
+                x = self.rect.x - w + 10
+
+            y = self.rect.y + self.rect.height // 2 - h // 2
+
+            win.blit(weapon_img, (x, y))
 
     def is_frozen(self, current_time):
         return current_time < self.frozen_until
@@ -63,10 +72,12 @@ class Player:
             if keys[pygame.K_LEFT] or keys[pygame.K_a]:
                 move_x = -self.vel
                 self.direction = -1
+                self.weapon_facing_right = False
 
             if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
                 move_x = self.vel
                 self.direction = 1
+                self.weapon_facing_right = True
 
             if (keys[pygame.K_UP] or keys[pygame.K_w] or keys[pygame.K_SPACE]) and self.on_ground:
                 self.y_velocity = -self.jump_strength
