@@ -110,6 +110,9 @@ class GameApp:
 
         self.mouse_held = False
 
+    def center_horizontally(self, width):
+        return self.screen_width // 2 - width // 2
+
     def resize_ui(self):
         scale = max(0.6, min(self.screen_height / 900, 1.5))
 
@@ -118,17 +121,17 @@ class GameApp:
         self.text_font = pygame.font.SysFont("arial", int(24 * scale))
         self.small_font = pygame.font.SysFont("arial", int(22 * scale))
 
-        center_x = self.screen_width // 2
         button_width = int(self.screen_width * 0.25)
         button_height = int(self.screen_height * 0.08)
+        button_x = self.center_horizontally(button_width)
 
-        self.join_button = Button(center_x - button_width // 2, int(self.screen_height * 0.30), button_width, button_height, "Join Game")
-        self.settings_button = Button(center_x - button_width // 2, int(self.screen_height * 0.42), button_width, button_height, "Settings")
-        self.quit_button = Button(center_x - button_width // 2, int(self.screen_height * 0.54), button_width, button_height, "Quit")
-        self.back_button = Button(center_x - button_width // 2, int(self.screen_height * 0.70), button_width, button_height, "Tilbage")
+        self.join_button = Button(button_x, int(self.screen_height * 0.30), button_width, button_height, "Join Game")
+        self.settings_button = Button(button_x, int(self.screen_height * 0.42), button_width, button_height, "Settings")
+        self.quit_button = Button(button_x, int(self.screen_height * 0.54), button_width, button_height, "Quit")
+        self.back_button = Button(button_x, int(self.screen_height * 0.70), button_width, button_height, "Tilbage")
 
         slider_width = int(self.screen_width * 0.3)
-        slider_x = center_x - slider_width // 2
+        slider_x = self.center_horizontally(slider_width)
 
         self.music_slider = Slider(slider_x, int(self.screen_height * 0.40), slider_width, 0, 100, 50, "Music volume")
         self.sfx_slider = Slider(slider_x, int(self.screen_height * 0.53), slider_width, 0, 100, 50, "SFX volume")
