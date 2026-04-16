@@ -112,6 +112,7 @@ class GameApp:
         self.network = None
         self.other_players = {}
         self.my_id = None
+        self.shared_weapon_drop = None
 
     def resize_ui(self):
         scale = max(0.6, min(self.screen_height / 900, 1.5))
@@ -149,29 +150,6 @@ class GameApp:
         self.network = NetworkClient("127.0.0.1")
 
         self.state = "game"
-
-    def spawn_weapon(self):
-        self.weapon_drop = WeaponDrop(self.base_width)
-
-    def remove_weapon(self):
-        self.weapon_drop = None
-        self.last_weapon_removed_time = pygame.time.get_ticks()
-
-    def update_weapons(self):
-        now = pygame.time.get_ticks()
-
-        if self.weapon_drop is None:
-            if now - self.last_weapon_removed_time > self.weapon_delay:
-                self.spawn_weapon()
-        else:
-            self.weapon_drop.update()
-
-            if self.weapon_drop.is_picked_up(self.player):
-                self.player.pick_up_weapon(self.weapon_drop)
-                self.remove_weapon()
-
-            elif self.weapon_drop.is_out_of_map(self.base_height):
-                self.remove_weapon()
 
     def shoot(self):
         if not self.player:
@@ -230,6 +208,7 @@ class GameApp:
 
         self.other_players = response["players"]
         self.my_id = response["your_id"]
+        self.shared_weapon_drop = response["weapon_drop"]
 
     def update_game(self):
         keys = pygame.key.get_pressed()
@@ -237,7 +216,6 @@ class GameApp:
         self.player.move(keys, self.game_map.platforms, self.base_width, self.base_height)
         self.player.update_reload(pygame.time.get_ticks())
 
-        self.update_weapons()
         self.update_projectiles()
 
         self.update_network()
@@ -248,8 +226,17 @@ class GameApp:
         self.game_map.draw(surface)
         self.player.draw(surface)
 
-        if self.weapon_drop:
-            self.weapon_drop.draw(surface)
+        if self.shared_weapon_drop:
+            pygame.draw.rect(
+                surface,
+                (255, 100, 0),
+                (
+                    self.shared_weapon_drop["x"],
+                    self.shared_weapon_drop["y"],
+                    30,
+                    20
+                )
+            )
 
         for projectile in self.projectiles:
             projectile.draw(surface)
