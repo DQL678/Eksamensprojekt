@@ -38,7 +38,9 @@ class Weapon:
         projectile_count,
         projectile_damage,
         reload_speed,
-        ammo_capacity
+        ammo_capacity,
+        special_type=None,
+        special_duration=0
     ):
         self.name = name
         self.fire_rate = fire_rate
@@ -49,12 +51,18 @@ class Weapon:
         self.projectile_damage = projectile_damage
         self.reload_speed = reload_speed
         self.ammo_capacity = ammo_capacity
+        self.special_type = special_type
+        self.special_duration = special_duration
 
 
 def create_weapon_from_json(name):
     for weapon in weapon_data_list:
         if weapon["name"] == name:
             projectile = weapon["projectile"]
+
+            special = weapon.get("special", {})
+            special_type = special.get("type")
+            special_duration = special.get("duration", 0)
 
             return Weapon(
                 name=weapon["name"],
@@ -65,7 +73,9 @@ def create_weapon_from_json(name):
                 projectile_count=projectile["count"],
                 projectile_damage=projectile["damage"],
                 reload_speed=weapon["reload_speed"],
-                ammo_capacity=weapon["ammo_capacity"]
+                ammo_capacity=weapon["ammo_capacity"],
+                special_type=special_type,
+                special_duration=special_duration
             )
 
     raise ValueError(f"Våbnet '{name}' blev ikke fundet i JSON-filen.")
@@ -91,6 +101,10 @@ def create_minigun():
     return create_weapon_from_json("Minigun")
 
 
+def create_freeze_gun():
+    return create_weapon_from_json("Freeze Gun")
+
+
 class WeaponDrop:
     def __init__(self, screen_width):
         self.width = 30
@@ -105,23 +119,26 @@ class WeaponDrop:
             create_sniper(),
             create_shotgun(),
             create_assault_rifle(),
-            create_minigun()
+            create_minigun(),
+            create_freeze_gun()
         ])
 
         if self.weapon.name == "Handgun":
-            self.color = (200, 50, 50)      # rød
+            self.color = (200, 50, 50)       # rød
         elif self.weapon.name == "Sniper":
-            self.color = (50, 80, 200)      # blå
+            self.color = (50, 80, 200)       # blå
         elif self.weapon.name == "Shotgun":
-            self.color = (210, 140, 40)     # orange
+            self.color = (210, 140, 40)      # orange
         elif self.weapon.name == "Assault Rifle":
-            self.color = (50, 170, 90)      # grøn
+            self.color = (50, 170, 90)       # grøn
+        elif self.weapon.name == "Minigun":
+            self.color = (130, 40, 150)      # lilla
         else:
-            self.color = (130, 40, 150)     # lilla
+            self.color = (80, 220, 255)      # lyseblå
 
         self.y_velocity = 0
-        self.gravity = 0.25
-        self.max_fall_speed = 6.5
+        self.gravity = 0.3
+        self.max_fall_speed = 8
 
     def update(self):
         self.y_velocity += self.gravity
@@ -154,6 +171,9 @@ class Projectile:
         self.distance_travelled = 0
         self.y_speed = spread
 
+        self.special_type = weapon.special_type
+        self.special_duration = weapon.special_duration
+
         if weapon.name == "Sniper":
             self.color = (40, 40, 180)
         elif weapon.name == "Shotgun":
@@ -162,6 +182,8 @@ class Projectile:
             self.color = (40, 150, 70)
         elif weapon.name == "Minigun":
             self.color = (130, 40, 150)
+        elif weapon.name == "Freeze Gun":
+            self.color = (80, 220, 255)
         else:
             self.color = (200, 0, 0)
 

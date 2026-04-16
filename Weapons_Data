@@ -64,6 +64,23 @@
       },
       "reload_speed": 2200,
       "ammo_capacity": 60
+    },
+    {
+      "name": "Freeze Gun",
+      "fire_rate": 650,
+      "projectile": {
+        "speed": 12,
+        "size": 12,
+        "range": 500,
+        "count": 2,
+        "damage": 10
+      },
+      "reload_speed": 900,
+      "ammo_capacity": 18,
+      "special": {
+        "type": "freeze",
+        "duration": 3000
+      }
     }
   ]
 }
