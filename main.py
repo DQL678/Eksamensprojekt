@@ -59,9 +59,9 @@ class Slider:
         elif event.type == pygame.MOUSEMOTION and self.dragging:
             self.update_value(event.pos[0])
 
-    def update_value(self, mx):
-        mx = max(self.x, min(mx, self.x + self.width))
-        percent = (mx - self.x) / self.width
+    def update_value(self, cursor_x):
+        cursor_x = max(self.x, min(cursor_x, self.x + self.width))
+        percent = (cursor_x - self.x) / self.width
         self.value = int(self.min_value + percent * (self.max_value - self.min_value))
 
     def draw(self, screen, font):
@@ -118,20 +118,20 @@ class GameApp:
         self.text_font = pygame.font.SysFont("arial", int(24 * scale))
         self.small_font = pygame.font.SysFont("arial", int(22 * scale))
 
-        cx = self.screen_width // 2
-        bw = int(self.screen_width * 0.25)
-        bh = int(self.screen_height * 0.08)
+        center_x = self.screen_width // 2
+        button_width = int(self.screen_width * 0.25)
+        button_height = int(self.screen_height * 0.08)
 
-        self.join_button = Button(cx - bw // 2, int(self.screen_height * 0.30), bw, bh, "Join Game")
-        self.settings_button = Button(cx - bw // 2, int(self.screen_height * 0.42), bw, bh, "Settings")
-        self.quit_button = Button(cx - bw // 2, int(self.screen_height * 0.54), bw, bh, "Quit")
-        self.back_button = Button(cx - bw // 2, int(self.screen_height * 0.70), bw, bh, "Tilbage")
+        self.join_button = Button(center_x - button_width // 2, int(self.screen_height * 0.30), button_width, button_height, "Join Game")
+        self.settings_button = Button(center_x - button_width // 2, int(self.screen_height * 0.42), button_width, button_height, "Settings")
+        self.quit_button = Button(center_x - button_width // 2, int(self.screen_height * 0.54), button_width, button_height, "Quit")
+        self.back_button = Button(center_x - button_width // 2, int(self.screen_height * 0.70), button_width, button_height, "Tilbage")
 
-        sw = int(self.screen_width * 0.3)
-        sx = cx - sw // 2
+        slider_width = int(self.screen_width * 0.3)
+        slider_x = center_x - slider_width // 2
 
-        self.music_slider = Slider(sx, int(self.screen_height * 0.40), sw, 0, 100, 50, "Music volume")
-        self.sfx_slider = Slider(sx, int(self.screen_height * 0.53), sw, 0, 100, 50, "SFX volume")
+        self.music_slider = Slider(slider_x, int(self.screen_height * 0.40), slider_width, 0, 100, 50, "Music volume")
+        self.sfx_slider = Slider(slider_x, int(self.screen_height * 0.53), slider_width, 0, 100, 50, "SFX volume")
 
     def start_game(self):
         self.game_map = GameMap(self.base_width, self.base_height)
