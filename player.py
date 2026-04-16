@@ -1,6 +1,5 @@
 import pygame
 
-
 class Player:
     def __init__(self, x, y, width, height, color):
         self.x = x
@@ -32,7 +31,23 @@ class Player:
         self.frozen_until = 0
 
     def draw(self, win):
+        # draw player
         pygame.draw.rect(win, self.color, self.rect)
+
+        # draw weapon
+        if self.current_weapon and self.current_weapon.image:
+            w, h = self.current_weapon.image_size
+
+            weapon_img = pygame.transform.scale(
+                self.current_weapon.image,
+                (w, h)
+            )
+
+            win.blit(
+                weapon_img,
+                (self.rect.x + self.rect.width - 10,
+                 self.rect.y + self.rect.height // 2 - h // 2)
+            )
 
     def is_frozen(self, current_time):
         return current_time < self.frozen_until

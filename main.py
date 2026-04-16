@@ -110,6 +110,9 @@ class GameApp:
 
         self.mouse_held = False
 
+        from weapons import load_weapon_images
+        load_weapon_images()
+
     def center_horizontally(self, width):
         return self.screen_width // 2 - width // 2
 

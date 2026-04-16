@@ -40,7 +40,9 @@ class Weapon:
         reload_speed,
         ammo_capacity,
         special_type=None,
-        special_duration=0
+        special_duration=0,
+        image=None,
+        image_size=None
     ):
         self.name = name
         self.fire_rate = fire_rate
@@ -53,9 +55,27 @@ class Weapon:
         self.ammo_capacity = ammo_capacity
         self.special_type = special_type
         self.special_duration = special_duration
+        self.image = image
+        self.image_size = image_size
 
+BASE_DIR = os.path.dirname(__file__)
+WEAPON_FOLDER = os.path.join(BASE_DIR, "Weapons")
+WEAPON_IMAGES = {}
+
+def load_weapon_images():
+    global WEAPON_IMAGES
+
+    WEAPON_IMAGES = {
+        "Handgun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Handgun.png")).convert_alpha(),
+        "Sniper": pygame.image.load(os.path.join(WEAPON_FOLDER, "Sniper.png")).convert_alpha(),
+        "Shotgun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Shotgun.png")).convert_alpha(),
+        "Assault Rifle": pygame.image.load(os.path.join(WEAPON_FOLDER, "Assault_Rifle.png")).convert_alpha(),
+        "Minigun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Minigun.png")).convert_alpha(),
+        "Freeze Gun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Freeze_Gun.png")).convert_alpha(),
+    }
 
 def create_weapon_from_json(name):
+
     for weapon in weapon_data_list:
         if weapon["name"] == name:
             projectile = weapon["projectile"]
@@ -64,6 +84,18 @@ def create_weapon_from_json(name):
             special_type = special.get("type")
             special_duration = special.get("duration", 0)
 
+            image = WEAPON_IMAGES.get(weapon["name"])
+            # custom sizes
+            image_sizes = {
+                "Handgun": (40, 25),
+                "Sniper": (120, 30),
+                "Shotgun": (120, 25),
+                "Assault Rifle": (100, 40),
+                "Minigun": (100, 40),
+                "Freeze Gun": (50, 30),
+            }
+
+            size = image_sizes.get(weapon["name"], (50, 30))
             return Weapon(
                 name=weapon["name"],
                 fire_rate=weapon["fire_rate"],
@@ -75,7 +107,9 @@ def create_weapon_from_json(name):
                 reload_speed=weapon["reload_speed"],
                 ammo_capacity=weapon["ammo_capacity"],
                 special_type=special_type,
-                special_duration=special_duration
+                special_duration=special_duration,
+                image=image,
+                image_size=size
             )
 
     raise ValueError(f"Våbnet '{name}' blev ikke fundet i JSON-filen.")
@@ -149,7 +183,15 @@ class WeaponDrop:
         self.rect.y += int(self.y_velocity)
 
     def draw(self, screen):
-        pygame.draw.rect(screen, self.color, self.rect)
+        if self.weapon.image:
+            w, h = self.weapon.image_size
+
+            img = pygame.transform.scale(self.weapon.image, (w, h))
+
+            rect = img.get_rect(center=self.rect.center)
+            screen.blit(img, rect)
+        else:
+            pygame.draw.rect(screen, self.color, self.rect)
 
     def is_picked_up(self, player):
         return self.rect.colliderect(player.rect)
