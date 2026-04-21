@@ -58,9 +58,11 @@ class Weapon:
         self.image = image
         self.image_size = image_size
 
+
 BASE_DIR = os.path.dirname(__file__)
 WEAPON_FOLDER = os.path.join(BASE_DIR, "Weapons")
 WEAPON_IMAGES = {}
+
 
 def load_weapon_images():
     global WEAPON_IMAGES
@@ -74,8 +76,8 @@ def load_weapon_images():
         "Freeze Gun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Freeze_Gun.png")).convert_alpha(),
     }
 
-def create_weapon_from_json(name):
 
+def create_weapon_from_json(name):
     for weapon in weapon_data_list:
         if weapon["name"] == name:
             projectile = weapon["projectile"]
@@ -85,7 +87,7 @@ def create_weapon_from_json(name):
             special_duration = special.get("duration", 0)
 
             image = WEAPON_IMAGES.get(weapon["name"])
-            # custom sizes
+
             image_sizes = {
                 "Handgun": (60, 50),
                 "Sniper": (120, 30),
@@ -96,6 +98,7 @@ def create_weapon_from_json(name):
             }
 
             size = image_sizes.get(weapon["name"], (50, 30))
+
             return Weapon(
                 name=weapon["name"],
                 fire_rate=weapon["fire_rate"],
@@ -157,22 +160,11 @@ class WeaponDrop:
             create_freeze_gun()
         ])
 
-        if self.weapon.name == "Handgun":
-            self.color = (200, 50, 50)       # rød
-        elif self.weapon.name == "Sniper":
-            self.color = (50, 80, 200)       # blå
-        elif self.weapon.name == "Shotgun":
-            self.color = (210, 140, 40)      # orange
-        elif self.weapon.name == "Assault Rifle":
-            self.color = (50, 170, 90)       # grøn
-        elif self.weapon.name == "Minigun":
-            self.color = (130, 40, 150)      # lilla
-        else:
-            self.color = (80, 220, 255)      # lyseblå
-
         self.y_velocity = 0
-        self.gravity = 0.3
-        self.max_fall_speed = 8
+
+        # Langsommere fald
+        self.gravity = 0.18
+        self.max_fall_speed = 4
 
     def update(self):
         self.y_velocity += self.gravity
@@ -184,14 +176,10 @@ class WeaponDrop:
 
     def draw(self, screen):
         if self.weapon.image:
-            w, h = self.weapon.image_size
-
-            img = pygame.transform.scale(self.weapon.image, (w, h))
-
-            rect = img.get_rect(center=self.rect.center)
-            screen.blit(img, rect)
-        else:
-            pygame.draw.rect(screen, self.color, self.rect)
+            width, height = self.weapon.image_size
+            image = pygame.transform.scale(self.weapon.image, (width, height))
+            image_rect = image.get_rect(center=self.rect.center)
+            screen.blit(image, image_rect)
 
     def is_picked_up(self, player):
         return self.rect.colliderect(player.rect)
