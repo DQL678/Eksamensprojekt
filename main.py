@@ -133,14 +133,20 @@ class GameApp:
         self.quit_button = Button(button_x, int(self.screen_height * 0.54), button_width, button_height, "Quit")
         self.back_button = Button(button_x, int(self.screen_height * 0.70), button_width, button_height, "Tilbage")
 
+        self.map1_button = Button(button_x, int(self.screen_height * 0.22), button_width, button_height, "Map 1")
+        self.map2_button = Button(button_x, int(self.screen_height * 0.32), button_width, button_height, "Map 2")
+        self.map3_button = Button(button_x, int(self.screen_height * 0.42), button_width, button_height, "Map 3")
+        self.map4_button = Button(button_x, int(self.screen_height * 0.52), button_width, button_height, "Map 4")
+        self.map5_button = Button(button_x, int(self.screen_height * 0.62), button_width, button_height, "Map 5")
+
         slider_width = int(self.screen_width * 0.3)
         slider_x = self.center_horizontally(slider_width)
 
         self.music_slider = Slider(slider_x, int(self.screen_height * 0.40), slider_width, 0, 100, 50, "Music volume")
         self.sfx_slider = Slider(slider_x, int(self.screen_height * 0.53), slider_width, 0, 100, 50, "SFX volume")
 
-    def start_game(self):
-        self.game_map = GameMap(self.base_width, self.base_height)
+    def start_game(self, map_number):
+        self.game_map = GameMap(self.base_width, self.base_height, map_number)
 
         spawn = self.game_map.spawn_points[0]
         self.player = Player(spawn[0], spawn[1], 40, 60, (255, 255, 255))
@@ -309,6 +315,19 @@ class GameApp:
         self.settings_button.draw(self.screen, self.button_font)
         self.quit_button.draw(self.screen, self.button_font)
 
+    def draw_map_select(self):
+        self.screen.fill((25, 25, 25))
+
+        title = self.title_font.render("Select Map", True, (255, 255, 255))
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.12)))
+        self.screen.blit(title, title_rect)
+
+        self.map1_button.draw(self.screen, self.button_font)
+        self.map2_button.draw(self.screen, self.button_font)
+        self.map3_button.draw(self.screen, self.button_font)
+        self.map4_button.draw(self.screen, self.button_font)
+        self.map5_button.draw(self.screen, self.button_font)
+
     def draw_settings(self):
         self.screen.fill((40, 40, 60))
 
@@ -356,11 +375,24 @@ class GameApp:
                 if self.state == "menu":
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         if self.join_button.is_clicked(event.pos):
-                            self.start_game()
+                            self.state = "map_select"
                         elif self.settings_button.is_clicked(event.pos):
                             self.state = "settings"
                         elif self.quit_button.is_clicked(event.pos):
                             self.running = False
+
+                elif self.state == "map_select":
+                    if event.type == pygame.MOUSEBUTTONDOWN:
+                        if self.map1_button.is_clicked(event.pos):
+                            self.start_game(1)
+                        elif self.map2_button.is_clicked(event.pos):
+                            self.start_game(2)
+                        elif self.map3_button.is_clicked(event.pos):
+                            self.start_game(3)
+                        elif self.map4_button.is_clicked(event.pos):
+                            self.start_game(4)
+                        elif self.map5_button.is_clicked(event.pos):
+                            self.start_game(5)
 
                 elif self.state == "settings":
                     self.music_slider.handle_event(event)
@@ -378,6 +410,8 @@ class GameApp:
 
             if self.state == "menu":
                 self.draw_menu()
+            elif self.state == "map_select":
+                self.draw_map_select()
             elif self.state == "settings":
                 self.draw_settings()
             elif self.state == "game":
