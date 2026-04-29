@@ -74,6 +74,7 @@ def load_weapon_images():
         "Assault Rifle": pygame.image.load(os.path.join(WEAPON_FOLDER, "Assault_Rifle.png")).convert_alpha(),
         "Minigun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Minigun.png")).convert_alpha(),
         "Freeze Gun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Freeze_Gun.png")).convert_alpha(),
+        "Laserbeamer": pygame.image.load(os.path.join(WEAPON_FOLDER, "Laserbeamer.png")).convert_alpha(),
     }
 
 
@@ -95,6 +96,7 @@ def create_weapon_from_json(name):
                 "Assault Rifle": (130, 55),
                 "Minigun": (100, 40),
                 "Freeze Gun": (80, 45),
+                "Laserbeamer": (110, 40),
             }
 
             size = image_sizes.get(weapon["name"], (50, 30))
@@ -142,6 +144,10 @@ def create_freeze_gun():
     return create_weapon_from_json("Freeze Gun")
 
 
+def create_laserbeamer():
+    return create_weapon_from_json("Laserbeamer")
+
+
 class WeaponDrop:
     def __init__(self, screen_width):
         self.width = 30
@@ -157,12 +163,11 @@ class WeaponDrop:
             create_shotgun(),
             create_assault_rifle(),
             create_minigun(),
-            create_freeze_gun()
+            create_freeze_gun(),
+            create_laserbeamer()
         ])
 
         self.y_velocity = 0
-
-        # Langsommere fald
         self.gravity = 0.18
         self.max_fall_speed = 4
 
@@ -203,6 +208,7 @@ class Projectile:
 
         self.special_type = weapon.special_type
         self.special_duration = weapon.special_duration
+        self.is_laser = False
 
         if weapon.name == "Sniper":
             self.color = (40, 40, 180)
@@ -229,3 +235,73 @@ class Projectile:
 
     def has_reached_max_range(self):
         return self.distance_travelled >= self.max_distance
+
+
+class LaserBeam:
+    def __init__(self, x, y, direction, weapon, platforms, screen_width):
+        self.x = x
+        self.y = y
+        self.direction = direction
+        self.damage = weapon.projectile_damage
+        self.size = weapon.projectile_size
+
+        self.special_type = weapon.special_type
+        self.special_duration = weapon.special_duration
+        self.is_laser = True
+
+        self.created_time = pygame.time.get_ticks()
+        self.duration = weapon.special_duration
+
+        self.start_pos = (x, y)
+        self.end_pos = self.find_end_position(platforms, screen_width)
+
+        left = min(self.start_pos[0], self.end_pos[0])
+        width = abs(self.end_pos[0] - self.start_pos[0])
+        self.rect = pygame.Rect(left, y - self.size // 2, width, self.size)
+
+        self.color = (255, 0, 0)
+
+    def find_end_position(self, platforms, screen_width):
+        end_x = screen_width if self.direction == 1 else 0
+
+        laser_top = self.y - self.size // 2
+        laser_bottom = self.y + self.size // 2
+
+        closest_distance = screen_width
+
+        for platform in platforms:
+            laser_hits_platform_height = (
+                laser_bottom >= platform.top and
+                laser_top <= platform.bottom
+            )
+
+            if laser_hits_platform_height:
+                if self.direction == 1 and platform.left > self.x:
+                    distance = platform.left - self.x
+                    if distance < closest_distance:
+                        closest_distance = distance
+                        end_x = platform.left
+
+                elif self.direction == -1 and platform.right < self.x:
+                    distance = self.x - platform.right
+                    if distance < closest_distance:
+                        closest_distance = distance
+                        end_x = platform.right
+
+        return (end_x, self.y)
+
+    def update(self):
+        pass
+
+    def draw(self, screen):
+        pygame.draw.line(
+            screen,
+            self.color,
+            self.start_pos,
+            self.end_pos,
+            self.size
+        )
+
+    def has_reached_max_range(self):
+        current_time = pygame.time.get_ticks()
+        return current_time - self.created_time > self.duration

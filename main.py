@@ -1,7 +1,7 @@
 import pygame
 from map import GameMap
 from player import Player
-from weapons import WeaponDrop, Projectile
+from weapons import WeaponDrop, Projectile, LaserBeam
 
 
 class Button:
@@ -182,6 +182,24 @@ class GameApp:
         now = pygame.time.get_ticks()
         projectile_data_list = self.player.try_shoot(now)
 
+        if len(projectile_data_list) == 0:
+            return
+
+        if self.player.current_weapon.name == "Laserbeamer":
+            data = projectile_data_list[0]
+
+            self.projectiles.append(
+                LaserBeam(
+                    data["x"],
+                    data["y"],
+                    self.player.direction,
+                    self.player.current_weapon,
+                    self.game_map.platforms,
+                    self.base_width
+                )
+            )
+            return
+
         count = len(projectile_data_list)
 
         for i, data in enumerate(projectile_data_list):
@@ -211,6 +229,9 @@ class GameApp:
         if self.player.current_weapon.name == "Minigun":
             self.shoot()
 
+        if self.player.current_weapon.name == "Laserbeamer":
+            self.shoot()
+
     def update_projectiles(self):
         remove = []
 
@@ -221,8 +242,11 @@ class GameApp:
                 remove.append(projectile)
                 continue
 
-            for plat in self.game_map.platforms:
-                if projectile.rect.colliderect(plat):
+            if projectile.is_laser:
+                continue
+
+            for platform in self.game_map.platforms:
+                if projectile.rect.colliderect(platform):
                     remove.append(projectile)
                     break
 
@@ -309,7 +333,7 @@ class GameApp:
                 self.mouse_held = True
 
                 if self.player.current_weapon is not None:
-                    if self.player.current_weapon.name != "Minigun":
+                    if self.player.current_weapon.name != "Minigun" and self.player.current_weapon.name != "Laserbeamer":
                         self.shoot()
 
         if event.type == pygame.MOUSEBUTTONUP:

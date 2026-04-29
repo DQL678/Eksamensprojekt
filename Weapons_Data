@@ -81,6 +81,23 @@
         "type": "freeze",
         "duration": 3000
       }
+    },
+    {
+      "name": "Laserbeamer",
+      "fire_rate": 1000,
+      "projectile": {
+        "speed": 30,
+        "size": 14,
+        "range": 1600,
+        "count": 1,
+        "damage": 8
+      },
+      "reload_speed": 1800,
+      "ammo_capacity": 5,
+      "special": {
+        "type": "laser",
+        "duration": 750
+      }
     }
   ]
 }
