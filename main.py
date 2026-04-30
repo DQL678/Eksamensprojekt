@@ -133,11 +133,8 @@ class GameApp:
         self.quit_button = Button(button_x, int(self.screen_height * 0.54), button_width, button_height, "Quit")
         self.back_button = Button(button_x, int(self.screen_height * 0.70), button_width, button_height, "Tilbage")
 
-        self.map1_button = Button(button_x, int(self.screen_height * 0.22), button_width, button_height, "Map 1")
-        self.map2_button = Button(button_x, int(self.screen_height * 0.32), button_width, button_height, "Map 2")
-        self.map3_button = Button(button_x, int(self.screen_height * 0.42), button_width, button_height, "Map 3")
-        self.map4_button = Button(button_x, int(self.screen_height * 0.52), button_width, button_height, "Map 4")
-        self.map5_button = Button(button_x, int(self.screen_height * 0.62), button_width, button_height, "Map 5")
+        self.map1_button = Button(button_x, int(self.screen_height * 0.34), button_width, button_height, "Map 1")
+        self.map2_button = Button(button_x, int(self.screen_height * 0.46), button_width, button_height, "Map 2")
 
         slider_width = int(self.screen_width * 0.3)
         slider_x = self.center_horizontally(slider_width)
@@ -319,14 +316,11 @@ class GameApp:
         self.screen.fill((25, 25, 25))
 
         title = self.title_font.render("Select Map", True, (255, 255, 255))
-        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.12)))
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.18)))
         self.screen.blit(title, title_rect)
 
         self.map1_button.draw(self.screen, self.button_font)
         self.map2_button.draw(self.screen, self.button_font)
-        self.map3_button.draw(self.screen, self.button_font)
-        self.map4_button.draw(self.screen, self.button_font)
-        self.map5_button.draw(self.screen, self.button_font)
 
     def draw_settings(self):
         self.screen.fill((40, 40, 60))
@@ -387,12 +381,6 @@ class GameApp:
                             self.start_game(1)
                         elif self.map2_button.is_clicked(event.pos):
                             self.start_game(2)
-                        elif self.map3_button.is_clicked(event.pos):
-                            self.start_game(3)
-                        elif self.map4_button.is_clicked(event.pos):
-                            self.start_game(4)
-                        elif self.map5_button.is_clicked(event.pos):
-                            self.start_game(5)
 
                 elif self.state == "settings":
                     self.music_slider.handle_event(event)

@@ -19,12 +19,6 @@ class GameMap:
             self.create_map_1()
         elif self.map_number == 2:
             self.create_map_2()
-        elif self.map_number == 3:
-            self.create_map_3()
-        elif self.map_number == 4:
-            self.create_map_4()
-        elif self.map_number == 5:
-            self.create_map_5()
 
     def create_map_1(self):
         self.platforms = [
@@ -66,59 +60,6 @@ class GameMap:
         self.platforms = [
             pygame.Rect(0, 860, 1600, 40),
 
-            pygame.Rect(150, 160, 220, 8),
-            pygame.Rect(620, 160, 360, 8),
-            pygame.Rect(1230, 160, 220, 8),
-
-            pygame.Rect(330, 300, 200, 8),
-            pygame.Rect(720, 300, 160, 8),
-            pygame.Rect(1070, 300, 200, 8),
-
-            pygame.Rect(80, 440, 220, 8),
-            pygame.Rect(560, 440, 480, 8),
-            pygame.Rect(1300, 440, 220, 8),
-
-            pygame.Rect(330, 590, 200, 8),
-            pygame.Rect(720, 590, 160, 8),
-            pygame.Rect(1070, 590, 200, 8),
-
-            pygame.Rect(150, 740, 220, 8),
-            pygame.Rect(620, 740, 360, 8),
-            pygame.Rect(1230, 740, 220, 8),
-        ]
-
-    def create_map_3(self):
-        self.platforms = [
-            pygame.Rect(0, 860, 1600, 40),
-
-            pygame.Rect(100, 180, 200, 8),
-            pygame.Rect(500, 180, 200, 8),
-            pygame.Rect(900, 180, 200, 8),
-            pygame.Rect(1300, 180, 200, 8),
-
-            pygame.Rect(300, 320, 220, 8),
-            pygame.Rect(700, 320, 220, 8),
-            pygame.Rect(1080, 320, 220, 8),
-
-            pygame.Rect(100, 460, 200, 8),
-            pygame.Rect(500, 460, 200, 8),
-            pygame.Rect(900, 460, 200, 8),
-            pygame.Rect(1300, 460, 200, 8),
-
-            pygame.Rect(300, 600, 220, 8),
-            pygame.Rect(700, 600, 220, 8),
-            pygame.Rect(1080, 600, 220, 8),
-
-            pygame.Rect(100, 740, 200, 8),
-            pygame.Rect(500, 740, 200, 8),
-            pygame.Rect(900, 740, 200, 8),
-            pygame.Rect(1300, 740, 200, 8),
-        ]
-
-    def create_map_4(self):
-        self.platforms = [
-            pygame.Rect(0, 860, 1600, 40),
-
             pygame.Rect(650, 130, 300, 8),
 
             pygame.Rect(520, 250, 180, 8),
@@ -137,32 +78,6 @@ class GameMap:
             pygame.Rect(900, 730, 180, 8),
 
             pygame.Rect(650, 820, 300, 8),
-        ]
-
-    def create_map_5(self):
-        self.platforms = [
-            pygame.Rect(0, 860, 1600, 40),
-
-            pygame.Rect(80, 150, 180, 8),
-            pygame.Rect(710, 150, 180, 8),
-            pygame.Rect(1340, 150, 180, 8),
-
-            pygame.Rect(280, 270, 180, 8),
-            pygame.Rect(930, 270, 180, 8),
-
-            pygame.Rect(80, 390, 180, 8),
-            pygame.Rect(710, 390, 180, 8),
-            pygame.Rect(1340, 390, 180, 8),
-
-            pygame.Rect(280, 510, 180, 8),
-            pygame.Rect(930, 510, 180, 8),
-
-            pygame.Rect(80, 630, 180, 8),
-            pygame.Rect(710, 630, 180, 8),
-            pygame.Rect(1340, 630, 180, 8),
-
-            pygame.Rect(280, 750, 180, 8),
-            pygame.Rect(930, 750, 180, 8),
         ]
 
     def create_spawn_points(self):
