@@ -285,21 +285,40 @@ class GameApp:
         self.draw_game_info()
 
     def draw_game_info(self):
+
         hp_text = self.small_font.render(
             f"HP: {self.player.hitpoints}   Lives: {self.player.lives}",
-            True, (0, 0, 0)
+            True,
+            (0, 0, 0)
         )
+
         self.screen.blit(hp_text, (20, 20))
 
+        score_text = self.small_font.render(
+            f"Score: {self.player.score}",
+            True,
+            (0, 0, 0)
+        )
+
+        self.screen.blit(score_text, (20, 50))
+
         if self.player.current_weapon is None:
-            weapon_text = self.small_font.render("Weapon: None   Ammo: 0", True, (0, 0, 0))
-        else:
+
             weapon_text = self.small_font.render(
-                f"Weapon: {self.player.current_weapon.name}   Ammo: {self.player.ammo}",
-                True, (0, 0, 0)
+                "Weapon: None   Ammo: 0",
+                True,
+                (0, 0, 0)
             )
 
-        self.screen.blit(weapon_text, (20, 50))
+        else:
+
+            weapon_text = self.small_font.render(
+                f"Weapon: {self.player.current_weapon.name}   Ammo: {self.player.ammo}",
+                True,
+                (0, 0, 0)
+            )
+
+        self.screen.blit(weapon_text, (20, 80))
 
     def draw_menu(self):
         self.screen.fill((25, 25, 25))
