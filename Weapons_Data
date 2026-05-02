@@ -98,6 +98,24 @@
         "type": "laser",
         "duration": 750
       }
+    },
+    {
+      "name": "Snowball Cannon",
+      "fire_rate": 800,
+      "projectile": {
+        "speed": 12,
+        "size": 16,
+        "range": 700,
+        "count": 1,
+        "damage": 8
+      },
+      "reload_speed": 1700,
+      "ammo_capacity": 20,
+      "special": {
+        "type": "slow",
+        "duration": 3000,
+        "amount": 0.3
+      }
     }
   ]
 }

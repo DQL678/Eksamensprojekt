@@ -41,6 +41,7 @@ class Weapon:
         ammo_capacity,
         special_type=None,
         special_duration=0,
+        special_amount=0,
         image=None,
         image_size=None
     ):
@@ -53,8 +54,11 @@ class Weapon:
         self.projectile_damage = projectile_damage
         self.reload_speed = reload_speed
         self.ammo_capacity = ammo_capacity
+
         self.special_type = special_type
         self.special_duration = special_duration
+        self.special_amount = special_amount
+
         self.image = image
         self.image_size = image_size
 
@@ -67,14 +71,24 @@ WEAPON_IMAGES = {}
 def load_weapon_images():
     global WEAPON_IMAGES
 
+    def load_safe(filename):
+        path = os.path.join(WEAPON_FOLDER, filename)
+
+        if os.path.exists(path):
+            return pygame.image.load(path).convert_alpha()
+
+        print("Missing weapon image:", filename)
+        return None
+
     WEAPON_IMAGES = {
-        "Handgun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Handgun.png")).convert_alpha(),
-        "Sniper": pygame.image.load(os.path.join(WEAPON_FOLDER, "Sniper.png")).convert_alpha(),
-        "Shotgun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Shotgun.png")).convert_alpha(),
-        "Assault Rifle": pygame.image.load(os.path.join(WEAPON_FOLDER, "Assault_Rifle.png")).convert_alpha(),
-        "Minigun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Minigun.png")).convert_alpha(),
-        "Freeze Gun": pygame.image.load(os.path.join(WEAPON_FOLDER, "Freeze_Gun.png")).convert_alpha(),
-        "Laserbeamer": pygame.image.load(os.path.join(WEAPON_FOLDER, "Laserbeamer.png")).convert_alpha(),
+        "Handgun": load_safe("Handgun.png"),
+        "Sniper": load_safe("Sniper.png"),
+        "Shotgun": load_safe("Shotgun.png"),
+        "Assault Rifle": load_safe("Assault_Rifle.png"),
+        "Minigun": load_safe("Minigun.png"),
+        "Freeze Gun": load_safe("Freeze_Gun.png"),
+        "Laserbeamer": load_safe("Laserbeamer.png"),
+        "Snowball Cannon": load_safe("Snowball_Cannon.png")
     }
 
 
@@ -86,6 +100,7 @@ def create_weapon_from_json(name):
             special = weapon.get("special", {})
             special_type = special.get("type")
             special_duration = special.get("duration", 0)
+            special_amount = special.get("amount", 0)
 
             image = WEAPON_IMAGES.get(weapon["name"])
 
@@ -97,6 +112,7 @@ def create_weapon_from_json(name):
                 "Minigun": (100, 40),
                 "Freeze Gun": (80, 45),
                 "Laserbeamer": (110, 40),
+                "Snowball Cannon": (100, 50)
             }
 
             size = image_sizes.get(weapon["name"], (50, 30))
@@ -113,6 +129,7 @@ def create_weapon_from_json(name):
                 ammo_capacity=weapon["ammo_capacity"],
                 special_type=special_type,
                 special_duration=special_duration,
+                special_amount=special_amount,
                 image=image,
                 image_size=size
             )
@@ -148,6 +165,10 @@ def create_laserbeamer():
     return create_weapon_from_json("Laserbeamer")
 
 
+def create_snowball_cannon():
+    return create_weapon_from_json("Snowball Cannon")
+
+
 class WeaponDrop:
     def __init__(self, screen_width):
         self.width = 30
@@ -164,7 +185,8 @@ class WeaponDrop:
             create_assault_rifle(),
             create_minigun(),
             create_freeze_gun(),
-            create_laserbeamer()
+            create_laserbeamer(),
+            create_snowball_cannon()
         ])
 
         self.y_velocity = 0
@@ -185,6 +207,8 @@ class WeaponDrop:
             image = pygame.transform.scale(self.weapon.image, (width, height))
             image_rect = image.get_rect(center=self.rect.center)
             screen.blit(image, image_rect)
+        else:
+            pygame.draw.rect(screen, (0, 0, 0), self.rect)
 
     def is_picked_up(self, player):
         return self.rect.colliderect(player.rect)
@@ -208,6 +232,8 @@ class Projectile:
 
         self.special_type = weapon.special_type
         self.special_duration = weapon.special_duration
+        self.special_amount = weapon.special_amount
+
         self.is_laser = False
 
         if weapon.name == "Sniper":
@@ -220,6 +246,8 @@ class Projectile:
             self.color = (130, 40, 150)
         elif weapon.name == "Freeze Gun":
             self.color = (80, 220, 255)
+        elif weapon.name == "Snowball Cannon":
+            self.color = (180, 240, 255)
         else:
             self.color = (200, 0, 0)
 
@@ -247,6 +275,8 @@ class LaserBeam:
 
         self.special_type = weapon.special_type
         self.special_duration = weapon.special_duration
+        self.special_amount = weapon.special_amount
+
         self.is_laser = True
 
         self.created_time = pygame.time.get_ticks()
@@ -278,12 +308,14 @@ class LaserBeam:
             if laser_hits_platform_height:
                 if self.direction == 1 and platform.left > self.x:
                     distance = platform.left - self.x
+
                     if distance < closest_distance:
                         closest_distance = distance
                         end_x = platform.left
 
                 elif self.direction == -1 and platform.right < self.x:
                     distance = self.x - platform.right
+
                     if distance < closest_distance:
                         closest_distance = distance
                         end_x = platform.right
