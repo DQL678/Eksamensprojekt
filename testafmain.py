@@ -1,7 +1,7 @@
 import pygame
 from map import GameMap
 from player import Player
-from weapons import WeaponDrop, Projectile, LaserBeam, create_weapon_from_json, load_weapon_images
+from weapons import WeaponDrop, Projectile, LaserBeam, create_weapon_from_json, load_weapon_images, WEAPON_IMAGES
 from client import NetworkClient
 
 
@@ -41,10 +41,8 @@ class Slider:
     def handle_event(self, event):
         handle_x = self.get_handle_x()
         handle_rect = pygame.Rect(
-            handle_x - self.handle_radius,
-            self.y - self.handle_radius,
-            self.handle_radius * 2,
-            self.handle_radius * 2
+            handle_x - self.handle_radius, self.y - self.handle_radius,
+            self.handle_radius * 2, self.handle_radius * 2
         )
         if event.type == pygame.MOUSEBUTTONDOWN:
             if handle_rect.collidepoint(event.pos) or self.bar_rect.collidepoint(event.pos):
@@ -65,11 +63,7 @@ class Slider:
         text_rect = text_surface.get_rect(center=(self.x + self.width // 2, self.y - 30))
         screen.blit(text_surface, text_rect)
         pygame.draw.rect(screen, (170, 170, 170), self.bar_rect)
-        pygame.draw.circle(
-            screen, (240, 240, 240),
-            (self.get_handle_x(), self.y + 3),
-            self.handle_radius
-        )
+        pygame.draw.circle(screen, (240, 240, 240), (self.get_handle_x(), self.y + 3), self.handle_radius)
 
 
 class TextInput:
@@ -98,6 +92,26 @@ class TextInput:
         screen.blit(surf, (self.rect.x + 10, self.rect.centery - surf.get_height() // 2))
 
 
+# Farver til projektiler baseret på våben-navn
+PROJECTILE_COLORS = {
+    "Sniper": (40, 40, 180),
+    "Shotgun": (180, 120, 20),
+    "Assault Rifle": (40, 150, 70),
+    "Minigun": (130, 40, 150),
+    "Freeze Gun": (80, 220, 255),
+    "Snowball Cannon": (180, 240, 255),
+    "Laserbeamer": (255, 0, 0),
+}
+DEFAULT_PROJECTILE_COLOR = (200, 0, 0)
+
+WEAPON_SIZES = {
+    "Handgun": (60, 50), "Sniper": (120, 30),
+    "Shotgun": (100, 25), "Assault Rifle": (130, 55),
+    "Minigun": (100, 40), "Freeze Gun": (80, 45),
+    "Laserbeamer": (110, 40), "Snowball Cannon": (100, 50)
+}
+
+
 class GameApp:
     def __init__(self):
         pygame.init()
@@ -106,14 +120,13 @@ class GameApp:
         self.screen_height = 700
 
         self.screen = pygame.display.set_mode(
-            (self.screen_width, self.screen_height),
-            pygame.RESIZABLE
+            (self.screen_width, self.screen_height), pygame.RESIZABLE
         )
         pygame.display.set_caption("Gun Man Game")
 
         self.clock = pygame.time.Clock()
         self.running = True
-        self.state = "menu"  # menu, join_screen, map_select, settings, game
+        self.state = "menu"
 
         self.base_width = 1600
         self.base_height = 900
@@ -123,19 +136,17 @@ class GameApp:
         self.game_map = None
         self.player = None
         self.weapon_drop = None
-        self.projectiles = []
+        self.projectiles = []  # Lokale projektiler (denne spiller)
+        self.server_projectiles = []  # Projektiler fra serveren (alle spillere)
 
         self.weapon_delay = 5000
         self.last_weapon_removed_time = 0
         self.mouse_held = False
 
-        # Multiplayer
         self.network = None
-        self.other_players = {}  # pid -> {"x", "y", "direction", "weapon", ...}
-        self.pending_projectiles = []  # projektiler der skal sendes til server
+        self.other_players = {}
+        self.pending_projectiles = []
         self.picked_up_weapon_flag = False
-
-        # Fejlbesked ved join
         self.connection_error = ""
 
         load_weapon_images()
@@ -163,7 +174,6 @@ class GameApp:
         self.map1_button = Button(button_x, int(self.screen_height * 0.34), button_width, button_height, "Map 1")
         self.map2_button = Button(button_x, int(self.screen_height * 0.46), button_width, button_height, "Map 2")
 
-        # Join-skærm: IP-input + connect knap
         input_width = int(self.screen_width * 0.3)
         input_x = self.center_horizontally(input_width)
         self.ip_input = TextInput(input_x, int(self.screen_height * 0.40), input_width, 44,
@@ -183,6 +193,7 @@ class GameApp:
 
         self.weapon_drop = None
         self.projectiles = []
+        self.server_projectiles = []
         self.other_players = {}
         self.pending_projectiles = []
         self.picked_up_weapon_flag = False
@@ -197,7 +208,6 @@ class GameApp:
         if not ip:
             self.connection_error = "Indtast en IP-adresse"
             return
-
         try:
             self.network = NetworkClient(ip)
             self.connection_error = ""
@@ -207,7 +217,7 @@ class GameApp:
             self.connection_error = f"Kunne ikke forbinde: {e}"
 
     # -------------------------------------------------------------------------
-    # Weapon drop (singleplayer fallback – bruges kun uden netværk)
+    # Weapon drop
     # -------------------------------------------------------------------------
 
     def spawn_weapon(self):
@@ -219,13 +229,11 @@ class GameApp:
 
     def update_weapons_local(self):
         now = pygame.time.get_ticks()
-
         if self.weapon_drop is None:
             if now - self.last_weapon_removed_time > self.weapon_delay:
                 self.spawn_weapon()
         else:
             self.weapon_drop.update()
-
             if self.weapon_drop.is_picked_up(self.player):
                 self.player.pick_up_weapon(self.weapon_drop)
                 self.remove_weapon()
@@ -233,13 +241,11 @@ class GameApp:
                 self.remove_weapon()
 
     def apply_server_weapon_drop(self, drop_data):
-        """Synkroniser weapon drop fra server."""
         if drop_data is None:
             self.weapon_drop = None
             return
 
         if self.weapon_drop is None:
-            # Lav et dummy WeaponDrop og overskriv med server-data
             self.weapon_drop = WeaponDrop.__new__(WeaponDrop)
             self.weapon_drop.width = 30
             self.weapon_drop.height = 20
@@ -254,9 +260,7 @@ class GameApp:
 
         self.weapon_drop.x = drop_data["x"]
         self.weapon_drop.y = drop_data["y"]
-        self.weapon_drop.rect = pygame.Rect(
-            drop_data["x"], drop_data["y"], 30, 20
-        )
+        self.weapon_drop.rect = pygame.Rect(drop_data["x"], drop_data["y"], 30, 20)
 
     # -------------------------------------------------------------------------
     # Skyd
@@ -272,14 +276,14 @@ class GameApp:
         if not projectile_data_list:
             return
 
-        if self.player.current_weapon.name == "Laserbeamer":
+        weapon = self.player.current_weapon
+
+        if weapon.name == "Laserbeamer":
             data = projectile_data_list[0]
             beam = LaserBeam(
                 data["x"], data["y"],
-                self.player.direction,
-                self.player.current_weapon,
-                self.game_map.platforms,
-                self.base_width
+                self.player.direction, weapon,
+                self.game_map.platforms, self.base_width
             )
             self.projectiles.append(beam)
 
@@ -288,46 +292,40 @@ class GameApp:
                     "x": data["x"], "y": data["y"],
                     "dir": self.player.direction,
                     "speed": 0,
-                    "range": self.player.current_weapon.special_duration,
+                    "range": weapon.special_duration,
                     "distance": 0,
                     "y_speed": 0,
                     "is_laser": True,
-                    "weapon": self.player.current_weapon.name,
-                    "damage": self.player.current_weapon.projectile_damage,
-                    "size": self.player.current_weapon.projectile_size,
-                    "special_type": self.player.current_weapon.special_type,
-                    "special_duration": self.player.current_weapon.special_duration,
-                    "special_amount": self.player.current_weapon.special_amount,
+                    "weapon": weapon.name,
+                    "damage": weapon.projectile_damage,
+                    "size": weapon.projectile_size,
+                    "special_type": weapon.special_type,
+                    "special_duration": weapon.special_duration,
+                    "special_amount": weapon.special_amount,
                 })
             return
 
         count = len(projectile_data_list)
         for i, data in enumerate(projectile_data_list):
-            spread = (i - count // 2) * 2 if self.player.current_weapon.name == "Shotgun" else 0
-
-            proj = Projectile(
-                data["x"], data["y"],
-                self.player.direction,
-                self.player.current_weapon,
-                spread
-            )
+            spread = (i - count // 2) * 2 if weapon.name == "Shotgun" else 0
+            proj = Projectile(data["x"], data["y"], self.player.direction, weapon, spread)
             self.projectiles.append(proj)
 
             if self.network:
                 self.pending_projectiles.append({
                     "x": data["x"], "y": data["y"],
                     "dir": self.player.direction,
-                    "speed": self.player.current_weapon.projectile_speed,
-                    "range": self.player.current_weapon.projectile_range,
+                    "speed": weapon.projectile_speed,
+                    "range": weapon.projectile_range,
                     "distance": 0,
                     "y_speed": spread,
                     "is_laser": False,
-                    "weapon": self.player.current_weapon.name,
-                    "damage": self.player.current_weapon.projectile_damage,
-                    "size": self.player.current_weapon.projectile_size,
-                    "special_type": self.player.current_weapon.special_type,
-                    "special_duration": self.player.current_weapon.special_duration,
-                    "special_amount": self.player.current_weapon.special_amount,
+                    "weapon": weapon.name,
+                    "damage": weapon.projectile_damage,
+                    "size": weapon.projectile_size,
+                    "special_type": weapon.special_type,
+                    "special_duration": weapon.special_duration,
+                    "special_amount": weapon.special_amount,
                 })
 
     def update_auto_fire(self):
@@ -337,6 +335,7 @@ class GameApp:
             self.shoot()
 
     def update_projectiles(self):
+        """Opdater kun lokale projektiler (kollision med platforms)."""
         remove = []
         for projectile in self.projectiles:
             projectile.update()
@@ -358,10 +357,7 @@ class GameApp:
     # -------------------------------------------------------------------------
 
     def sync_with_server(self):
-        """Send lokal state, modtag server state."""
-        weapon_name = None
-        if self.player.current_weapon:
-            weapon_name = self.player.current_weapon.name
+        weapon_name = self.player.current_weapon.name if self.player.current_weapon else None
 
         data = {
             "x": self.player.x,
@@ -380,26 +376,27 @@ class GameApp:
         self.picked_up_weapon_flag = False
 
         response = self.network.send_player_data(data)
-
         if response is None:
             return
 
-        # Opdater andre spillere
+        # Andre spillere
         self.other_players = {}
         pid_str = str(self.network.player_id)
         for pid, pdata in response["players"].items():
             if pid != pid_str:
                 self.other_players[pid] = pdata
 
-        # Opdater weapon drop fra server
+        # Weapon drop
         self.apply_server_weapon_drop(response.get("weapon_drop"))
 
-        # Tjek om spilleren selv picker weapon op (lokalt)
-        if self.weapon_drop is not None:
-            if self.weapon_drop.is_picked_up(self.player):
-                self.player.pick_up_weapon(self.weapon_drop)
-                self.weapon_drop = None
-                self.picked_up_weapon_flag = True
+        # Tjek pickup
+        if self.weapon_drop is not None and self.weapon_drop.is_picked_up(self.player):
+            self.player.pick_up_weapon(self.weapon_drop)
+            self.weapon_drop = None
+            self.picked_up_weapon_flag = True
+
+        # *** FIX: Gem server-projektiler så vi kan tegne dem ***
+        self.server_projectiles = response.get("projectiles", [])
 
     # -------------------------------------------------------------------------
     # Update
@@ -407,7 +404,6 @@ class GameApp:
 
     def update_game(self):
         keys = pygame.key.get_pressed()
-
         self.player.move(keys, self.game_map.platforms, self.base_width, self.base_height)
         self.player.update_reload(pygame.time.get_ticks())
 
@@ -423,76 +419,85 @@ class GameApp:
     # Draw
     # -------------------------------------------------------------------------
 
+    def draw_server_projectiles(self, surface):
+        """Tegn alle projektiler fra serveren (inkl. andres skud)."""
+        my_pid = self.network.player_id if self.network else None
+
+        for p in self.server_projectiles:
+            # Spring over egne projektiler – de tegnes allerede lokalt
+            if p.get("owner") == my_pid:
+                continue
+
+            if p.get("is_laser"):
+                # Tegn laser som en linje
+                x = int(p["x"])
+                y = int(p["y"])
+                direction = p.get("dir", 1)
+                end_x = self.base_width if direction == 1 else 0
+                size = max(1, int(p.get("size", 4)))
+                pygame.draw.line(surface, (255, 0, 0), (x, y), (end_x, y), size)
+            else:
+                size = max(1, int(p.get("size", 6)))
+                x = int(p["x"])
+                y = int(p["y"])
+                color = PROJECTILE_COLORS.get(p.get("weapon", ""), DEFAULT_PROJECTILE_COLOR)
+                pygame.draw.rect(surface, color, pygame.Rect(x, y, size, size))
+
     def draw_other_players(self, surface):
         for pid, pdata in self.other_players.items():
             x = int(pdata.get("x", 0))
             y = int(pdata.get("y", 0))
 
-            # Tegn spillerens rektangel i en anden farve
             rect = pygame.Rect(x, y, 40, 60)
             pygame.draw.rect(surface, (255, 80, 80), rect)
 
-            # Navn / ID label
             label = self.small_font.render(f"P{pid}", True, (0, 0, 0))
             surface.blit(label, (x, y - 22))
 
-            # Tegn våben hvis de har et
             weapon_name = pdata.get("weapon")
             if weapon_name:
-                try:
-                    from weapons import WEAPON_IMAGES
-                    img = WEAPON_IMAGES.get(weapon_name)
-                    if img:
-                        weapon_sizes = {
-                            "Handgun": (60, 50), "Sniper": (120, 30),
-                            "Shotgun": (100, 25), "Assault Rifle": (130, 55),
-                            "Minigun": (100, 40), "Freeze Gun": (80, 45),
-                            "Laserbeamer": (110, 40), "Snowball Cannon": (100, 50)
-                        }
-                        w, h = weapon_sizes.get(weapon_name, (50, 30))
-                        scaled = pygame.transform.scale(img, (w, h))
-                        direction = pdata.get("direction", 1)
-                        if direction == -1:
-                            scaled = pygame.transform.flip(scaled, True, False)
-                            wx = x - w + 10
-                        else:
-                            wx = x + 40 - 10
-                        wy = y + 30 - h // 2
-                        surface.blit(scaled, (wx, wy))
-                except Exception:
-                    pass
+                img = WEAPON_IMAGES.get(weapon_name)
+                if img:
+                    w, h = WEAPON_SIZES.get(weapon_name, (50, 30))
+                    scaled = pygame.transform.scale(img, (w, h))
+                    direction = pdata.get("direction", 1)
+                    if direction == -1:
+                        scaled = pygame.transform.flip(scaled, True, False)
+                        wx = x - w + 10
+                    else:
+                        wx = x + 40 - 10
+                    wy = y + 30 - h // 2
+                    surface.blit(scaled, (wx, wy))
 
     def draw_game(self):
         surface = pygame.Surface((self.base_width, self.base_height))
 
         self.game_map.draw(surface)
-
-        # Andre spillere tegnes UNDER den lokale spiller
         self.draw_other_players(surface)
-
         self.player.draw(surface)
 
         if self.weapon_drop:
             self.weapon_drop.draw(surface)
 
+        # Lokale projektiler
         for projectile in self.projectiles:
             projectile.draw(surface)
 
+        # Andre spilleres projektiler fra serveren
+        if self.network:
+            self.draw_server_projectiles(surface)
+
         scaled = pygame.transform.scale(surface, (self.screen_width, self.screen_height))
         self.screen.blit(scaled, (0, 0))
-
         self.draw_game_info()
 
     def draw_game_info(self):
         hp_text = self.small_font.render(
-            f"HP: {self.player.hitpoints}   Lives: {self.player.lives}",
-            True, (0, 0, 0)
+            f"HP: {self.player.hitpoints}   Lives: {self.player.lives}", True, (0, 0, 0)
         )
         self.screen.blit(hp_text, (20, 20))
 
-        score_text = self.small_font.render(
-            f"Score: {self.player.score}", True, (0, 0, 0)
-        )
+        score_text = self.small_font.render(f"Score: {self.player.score}", True, (0, 0, 0))
         self.screen.blit(score_text, (20, 50))
 
         if self.player.current_weapon is None:
@@ -504,7 +509,6 @@ class GameApp:
             )
         self.screen.blit(weapon_text, (20, 80))
 
-        # Vis multiplayer status
         if self.network:
             mp_text = self.small_font.render(
                 f"Online – Spiller {self.network.player_id} | Øvrige: {len(self.other_players)}",
@@ -567,7 +571,6 @@ class GameApp:
                     self.network.close()
                     self.network = None
                 self.state = "menu"
-
             if event.key == pygame.K_r:
                 self.player.start_reload(pygame.time.get_ticks())
 
