@@ -92,7 +92,6 @@ class TextInput:
         screen.blit(surf, (self.rect.x + 10, self.rect.centery - surf.get_height() // 2))
 
 
-# Farver til projektiler baseret på våben-navn
 PROJECTILE_COLORS = {
     "Sniper": (40, 40, 180),
     "Shotgun": (180, 120, 20),
@@ -136,8 +135,13 @@ class GameApp:
         self.game_map = None
         self.player = None
         self.weapon_drop = None
-        self.projectiles = []  # Lokale projektiler (denne spiller)
-        self.server_projectiles = []  # Projektiler fra serveren (alle spillere)
+
+        # FIX: Ingen lokal projektil-liste mere.
+        # Vi bruger KUN server_projectiles til at tegne ALLE projektiler.
+        # Egne skud tilføjes til pending_projectiles og sendes til server,
+        # hvorefter serveren returnerer dem i den fælles liste.
+        self.server_projectiles = []
+        self.pending_projectiles = []
 
         self.weapon_delay = 5000
         self.last_weapon_removed_time = 0
@@ -145,9 +149,11 @@ class GameApp:
 
         self.network = None
         self.other_players = {}
-        self.pending_projectiles = []
         self.picked_up_weapon_flag = False
         self.connection_error = ""
+
+        # Til singleplayer (ingen server)
+        self.local_projectiles = []
 
         load_weapon_images()
 
@@ -187,13 +193,12 @@ class GameApp:
 
     def start_game(self, map_number):
         self.game_map = GameMap(self.base_width, self.base_height, map_number)
-
         spawn = self.game_map.spawn_points[0]
         self.player = Player(spawn[0], spawn[1], 40, 60, (255, 255, 255))
 
         self.weapon_drop = None
-        self.projectiles = []
         self.server_projectiles = []
+        self.local_projectiles = []
         self.other_players = {}
         self.pending_projectiles = []
         self.picked_up_weapon_flag = False
@@ -244,7 +249,6 @@ class GameApp:
         if drop_data is None:
             self.weapon_drop = None
             return
-
         if self.weapon_drop is None:
             self.weapon_drop = WeaponDrop.__new__(WeaponDrop)
             self.weapon_drop.width = 30
@@ -257,7 +261,6 @@ class GameApp:
             except Exception:
                 self.weapon_drop = None
                 return
-
         self.weapon_drop.x = drop_data["x"]
         self.weapon_drop.y = drop_data["y"]
         self.weapon_drop.rect = pygame.Rect(drop_data["x"], drop_data["y"], 30, 20)
@@ -269,10 +272,8 @@ class GameApp:
     def shoot(self):
         if not self.player:
             return
-
         now = pygame.time.get_ticks()
         projectile_data_list = self.player.try_shoot(now)
-
         if not projectile_data_list:
             return
 
@@ -280,14 +281,17 @@ class GameApp:
 
         if weapon.name == "Laserbeamer":
             data = projectile_data_list[0]
-            beam = LaserBeam(
-                data["x"], data["y"],
-                self.player.direction, weapon,
-                self.game_map.platforms, self.base_width
-            )
-            self.projectiles.append(beam)
 
-            if self.network:
+            if not self.network:
+                # Singleplayer: tegn lokalt
+                beam = LaserBeam(
+                    data["x"], data["y"],
+                    self.player.direction, weapon,
+                    self.game_map.platforms, self.base_width
+                )
+                self.local_projectiles.append(beam)
+            else:
+                # Multiplayer: send til server, den returnerer den i fælles liste
                 self.pending_projectiles.append({
                     "x": data["x"], "y": data["y"],
                     "dir": self.player.direction,
@@ -308,10 +312,11 @@ class GameApp:
         count = len(projectile_data_list)
         for i, data in enumerate(projectile_data_list):
             spread = (i - count // 2) * 2 if weapon.name == "Shotgun" else 0
-            proj = Projectile(data["x"], data["y"], self.player.direction, weapon, spread)
-            self.projectiles.append(proj)
 
-            if self.network:
+            if not self.network:
+                proj = Projectile(data["x"], data["y"], self.player.direction, weapon, spread)
+                self.local_projectiles.append(proj)
+            else:
                 self.pending_projectiles.append({
                     "x": data["x"], "y": data["y"],
                     "dir": self.player.direction,
@@ -334,10 +339,10 @@ class GameApp:
         if self.player.current_weapon.name in ("Minigun", "Laserbeamer"):
             self.shoot()
 
-    def update_projectiles(self):
-        """Opdater kun lokale projektiler (kollision med platforms)."""
+    def update_local_projectiles(self):
+        """Kun brugt i singleplayer."""
         remove = []
-        for projectile in self.projectiles:
+        for projectile in self.local_projectiles:
             projectile.update()
             if projectile.has_reached_max_range():
                 remove.append(projectile)
@@ -349,8 +354,8 @@ class GameApp:
                     remove.append(projectile)
                     break
         for p in remove:
-            if p in self.projectiles:
-                self.projectiles.remove(p)
+            if p in self.local_projectiles:
+                self.local_projectiles.remove(p)
 
     # -------------------------------------------------------------------------
     # Multiplayer sync
@@ -379,12 +384,14 @@ class GameApp:
         if response is None:
             return
 
-        # Andre spillere
+        # FIX: Gem player_id som int for sammenligning
+        my_pid = self.network.player_id
+
+        # Andre spillere – sammenlign korrekt (server bruger int keys, JSON laver dem til strings)
         self.other_players = {}
-        pid_str = str(self.network.player_id)
-        for pid, pdata in response["players"].items():
-            if pid != pid_str:
-                self.other_players[pid] = pdata
+        for pid_str, pdata in response["players"].items():
+            if int(pid_str) != my_pid:
+                self.other_players[pid_str] = pdata
 
         # Weapon drop
         self.apply_server_weapon_drop(response.get("weapon_drop"))
@@ -395,7 +402,8 @@ class GameApp:
             self.weapon_drop = None
             self.picked_up_weapon_flag = True
 
-        # *** FIX: Gem server-projektiler så vi kan tegne dem ***
+        # FIX: Erstat server_projectiles fuldstændigt – serveren er sandheden
+        # Serveren har allerede fjernet udløbne projektiler, så vi bare tegner hvad den sender
         self.server_projectiles = response.get("projectiles", [])
 
     # -------------------------------------------------------------------------
@@ -411,25 +419,21 @@ class GameApp:
             self.sync_with_server()
         else:
             self.update_weapons_local()
+            self.update_local_projectiles()
 
         self.update_auto_fire()
-        self.update_projectiles()
 
     # -------------------------------------------------------------------------
     # Draw
     # -------------------------------------------------------------------------
 
     def draw_server_projectiles(self, surface):
-        """Tegn alle projektiler fra serveren (inkl. andres skud)."""
-        my_pid = self.network.player_id if self.network else None
-
+        """
+        Tegner ALLE projektiler fra serveren – både egne og andres.
+        Serveren er single source of truth, så ingen duplikering.
+        """
         for p in self.server_projectiles:
-            # Spring over egne projektiler – de tegnes allerede lokalt
-            if p.get("owner") == my_pid:
-                continue
-
             if p.get("is_laser"):
-                # Tegn laser som en linje
                 x = int(p["x"])
                 y = int(p["y"])
                 direction = p.get("dir", 1)
@@ -479,13 +483,13 @@ class GameApp:
         if self.weapon_drop:
             self.weapon_drop.draw(surface)
 
-        # Lokale projektiler
-        for projectile in self.projectiles:
-            projectile.draw(surface)
-
-        # Andre spilleres projektiler fra serveren
         if self.network:
+            # Multiplayer: tegn ALT fra server (inkl. egne skud)
             self.draw_server_projectiles(surface)
+        else:
+            # Singleplayer: tegn lokale projektiler
+            for projectile in self.local_projectiles:
+                projectile.draw(surface)
 
         scaled = pygame.transform.scale(surface, (self.screen_width, self.screen_height))
         self.screen.blit(scaled, (0, 0))

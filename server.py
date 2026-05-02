@@ -15,20 +15,20 @@ try:
 except OSError as e:
     print(f"FEJL: Kunne ikke starte server på port {PORT}: {e}")
     print("Løsning: Åbn terminal og kør:  kill $(lsof -ti:5555)")
-    print("Eller skift PORT til 5556 i både server.py og client.py")
     exit(1)
 
 server.listen()
 print(f"SERVER KØRER på port {PORT}")
 
 players = {}
-projectiles = []
+projectiles = {}  # proj_id -> projektil-dict
+next_proj_id = 1
 weapon_drop = None
 weapon_drop_timer = 0
 WEAPON_DELAY = 5.0
 
 lock = threading.Lock()
-next_id = 1
+next_client_id = 1
 
 WEAPON_NAMES = [
     "Handgun", "Sniper", "Shotgun",
@@ -71,40 +71,45 @@ def remove_weapon():
 
 def update_projectiles():
     global projectiles
-    remove = []
-    for p in projectiles:
-        p["x"] += p["dir"] * p["speed"]
-        p["y"] += p.get("y_speed", 0)
-        p["distance"] += abs(p["speed"])
-        if p["distance"] >= p["range"]:
-            remove.append(p)
-    for p in remove:
-        if p in projectiles:
-            projectiles.remove(p)
+    remove_ids = []
+    for pid, p in projectiles.items():
+        if p.get("is_laser"):
+            # Lasere fjernes baseret på alder (duration i ms)
+            age_ms = (get_time() - p["created_at"]) * 1000
+            if age_ms >= p.get("range", 500):
+                remove_ids.append(pid)
+        else:
+            p["x"] += p["dir"] * p["speed"]
+            p["y"] += p.get("y_speed", 0)
+            p["distance"] += abs(p["speed"])
+            if p["distance"] >= p["range"]:
+                remove_ids.append(pid)
+    for pid in remove_ids:
+        projectiles.pop(pid, None)
 
 
 def build_response():
     return {
         "players": players,
-        "projectiles": projectiles,
+        "projectiles": list(projectiles.values()),
         "weapon_drop": weapon_drop
     }
 
 
-def handle_client(conn, addr, pid):
-    global players, projectiles, weapon_drop
+def handle_client(conn, addr, cid):
+    global players, projectiles, next_proj_id, weapon_drop
 
-    print(f"FORBUNDET: {addr} som spiller {pid}")
+    print(f"FORBUNDET: {addr} som spiller {cid}")
 
     with lock:
-        players[pid] = {
+        players[cid] = {
             "x": 100, "y": 800,
             "direction": 1,
             "weapon": None, "ammo": 0,
             "hitpoints": 100, "lives": 3, "score": 0
         }
 
-    conn.send((str(pid) + "\n").encode())
+    conn.send((str(cid) + "\n").encode())
 
     buffer = ""
 
@@ -124,9 +129,9 @@ def handle_client(conn, addr, pid):
                 player_data = json.loads(line)
 
                 with lock:
-                    players[pid].update({
-                        "x": player_data.get("x", players[pid]["x"]),
-                        "y": player_data.get("y", players[pid]["y"]),
+                    players[cid].update({
+                        "x": player_data.get("x", players[cid]["x"]),
+                        "y": player_data.get("y", players[cid]["y"]),
                         "direction": player_data.get("direction", 1),
                         "weapon": player_data.get("weapon"),
                         "ammo": player_data.get("ammo", 0),
@@ -139,9 +144,14 @@ def handle_client(conn, addr, pid):
                     update_weapon()
                     update_projectiles()
 
+                    # Tilføj nye projektiler med unikke ID'er
                     for proj in player_data.get("new_projectiles", []):
-                        proj["owner"] = pid
-                        projectiles.append(proj)
+                        proj["owner"] = cid
+                        proj["id"] = next_proj_id
+                        if proj.get("is_laser"):
+                            proj["created_at"] = get_time()
+                        projectiles[next_proj_id] = proj
+                        next_proj_id += 1
 
                     if player_data.get("picked_up_weapon"):
                         remove_weapon()
@@ -151,24 +161,28 @@ def handle_client(conn, addr, pid):
                 conn.send((json.dumps(response) + "\n").encode())
 
         except Exception as e:
-            print(f"FEJL for spiller {pid}:", e)
+            print(f"FEJL for spiller {cid}:", e)
             break
 
     with lock:
-        players.pop(pid, None)
+        players.pop(cid, None)
+        # Fjern spillerens projektiler når de disconnecter
+        remove_ids = [pid for pid, p in projectiles.items() if p.get("owner") == cid]
+        for pid in remove_ids:
+            projectiles.pop(pid, None)
 
     conn.close()
-    print(f"AFBRUDT: spiller {pid}")
+    print(f"AFBRUDT: spiller {cid}")
 
 
 while True:
     conn, addr = server.accept()
     with lock:
-        pid = next_id
-        next_id += 1
+        cid = next_client_id
+        next_client_id += 1
     thread = threading.Thread(
         target=handle_client,
-        args=(conn, addr, pid),
+        args=(conn, addr, cid),
         daemon=True
     )
     thread.start()
