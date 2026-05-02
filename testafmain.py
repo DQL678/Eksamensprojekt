@@ -1,7 +1,8 @@
 import pygame
 from map import GameMap
 from player import Player
-from weapons import WeaponDrop, Projectile, LaserBeam, create_weapon_from_json, load_weapon_images, WEAPON_IMAGES
+from weapons import WeaponDrop, Projectile, LaserBeam, create_weapon_from_json, load_weapon_images
+import weapons
 from client import NetworkClient
 
 
@@ -136,10 +137,6 @@ class GameApp:
         self.player = None
         self.weapon_drop = None
 
-        # FIX: Ingen lokal projektil-liste mere.
-        # Vi bruger KUN server_projectiles til at tegne ALLE projektiler.
-        # Egne skud tilføjes til pending_projectiles og sendes til server,
-        # hvorefter serveren returnerer dem i den fælles liste.
         self.server_projectiles = []
         self.pending_projectiles = []
 
@@ -152,7 +149,6 @@ class GameApp:
         self.picked_up_weapon_flag = False
         self.connection_error = ""
 
-        # Til singleplayer (ingen server)
         self.local_projectiles = []
 
         load_weapon_images()
@@ -283,7 +279,6 @@ class GameApp:
             data = projectile_data_list[0]
 
             if not self.network:
-                # Singleplayer: tegn lokalt
                 beam = LaserBeam(
                     data["x"], data["y"],
                     self.player.direction, weapon,
@@ -291,7 +286,6 @@ class GameApp:
                 )
                 self.local_projectiles.append(beam)
             else:
-                # Multiplayer: send til server, den returnerer den i fælles liste
                 self.pending_projectiles.append({
                     "x": data["x"], "y": data["y"],
                     "dir": self.player.direction,
@@ -384,26 +378,20 @@ class GameApp:
         if response is None:
             return
 
-        # FIX: Gem player_id som int for sammenligning
         my_pid = self.network.player_id
 
-        # Andre spillere – sammenlign korrekt (server bruger int keys, JSON laver dem til strings)
         self.other_players = {}
         for pid_str, pdata in response["players"].items():
             if int(pid_str) != my_pid:
                 self.other_players[pid_str] = pdata
 
-        # Weapon drop
         self.apply_server_weapon_drop(response.get("weapon_drop"))
 
-        # Tjek pickup
         if self.weapon_drop is not None and self.weapon_drop.is_picked_up(self.player):
             self.player.pick_up_weapon(self.weapon_drop)
             self.weapon_drop = None
             self.picked_up_weapon_flag = True
 
-        # FIX: Erstat server_projectiles fuldstændigt – serveren er sandheden
-        # Serveren har allerede fjernet udløbne projektiler, så vi bare tegner hvad den sender
         self.server_projectiles = response.get("projectiles", [])
 
     # -------------------------------------------------------------------------
@@ -428,10 +416,6 @@ class GameApp:
     # -------------------------------------------------------------------------
 
     def draw_server_projectiles(self, surface):
-        """
-        Tegner ALLE projektiler fra serveren – både egne og andres.
-        Serveren er single source of truth, så ingen duplikering.
-        """
         for p in self.server_projectiles:
             if p.get("is_laser"):
                 x = int(p["x"])
@@ -460,7 +444,8 @@ class GameApp:
 
             weapon_name = pdata.get("weapon")
             if weapon_name:
-                img = WEAPON_IMAGES.get(weapon_name)
+                # FIX: brug weapons.WEAPON_IMAGES direkte så vi altid får den opdaterede dict
+                img = weapons.WEAPON_IMAGES.get(weapon_name)
                 if img:
                     w, h = WEAPON_SIZES.get(weapon_name, (50, 30))
                     scaled = pygame.transform.scale(img, (w, h))
@@ -484,10 +469,8 @@ class GameApp:
             self.weapon_drop.draw(surface)
 
         if self.network:
-            # Multiplayer: tegn ALT fra server (inkl. egne skud)
             self.draw_server_projectiles(surface)
         else:
-            # Singleplayer: tegn lokale projektiler
             for projectile in self.local_projectiles:
                 projectile.draw(surface)
 
