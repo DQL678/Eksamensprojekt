@@ -19,7 +19,6 @@ HOST = "0.0.0.0"
 PORT = 5555
 
 BASE_WIDTH = 1600
-BASE_HEIGHT = 900
 PLAYER_WIDTH = 40
 PLAYER_HEIGHT = 60
 
@@ -51,6 +50,9 @@ next_client_id = 1
 
 TICK_RATE = 60
 
+game_over = False
+winner_id = None
+
 WEAPON_NAMES = [
     "Handgun", "Sniper", "Shotgun",
     "Assault Rifle", "Minigun", "Freeze Gun",
@@ -62,6 +64,14 @@ def get_time():
     return time.time()
 
 
+def get_random_spawn():
+    return random.choice([
+        (100, 800),
+        (760, 800),
+        (1400, 800)
+    ])
+
+
 def rects_collide(a, b):
     return (
         a["x"] < b["x"] + b["w"] and
@@ -71,25 +81,50 @@ def rects_collide(a, b):
     )
 
 
+def check_game_over():
+    global game_over, winner_id
+
+    alive_players = []
+
+    for player_id, player in players.items():
+        if player["lives"] > 0:
+            alive_players.append(player_id)
+
+    if len(players) >= 2 and len(alive_players) == 1:
+        game_over = True
+        winner_id = alive_players[0]
+
+
 def damage_player(target_id, damage, owner_id):
     if target_id not in players:
+        return
+
+    if players[target_id]["lives"] <= 0:
         return
 
     players[target_id]["hitpoints"] -= damage
 
     if players[target_id]["hitpoints"] <= 0:
         players[target_id]["lives"] -= 1
-        players[target_id]["hitpoints"] = 100
-
-        players[target_id]["x"] = random.choice([100, 760, 1400])
-        players[target_id]["y"] = 800
 
         if owner_id in players:
             players[owner_id]["score"] += 1
 
+        if players[target_id]["lives"] <= 0:
+            players[target_id]["hitpoints"] = 0
+            check_game_over()
+        else:
+            players[target_id]["hitpoints"] = 100
+            spawn_x, spawn_y = get_random_spawn()
+            players[target_id]["x"] = spawn_x
+            players[target_id]["y"] = spawn_y
+
 
 def maybe_spawn_weapon():
     global weapon_drop, weapon_drop_timer
+
+    if game_over:
+        return
 
     if weapon_drop is None:
         if get_time() - weapon_drop_timer >= WEAPON_DELAY:
@@ -103,6 +138,9 @@ def maybe_spawn_weapon():
 
 def update_weapon():
     global weapon_drop
+
+    if game_over:
+        return
 
     if weapon_drop is None:
         return
@@ -123,6 +161,9 @@ def remove_weapon():
 
 def update_projectiles():
     global projectiles
+
+    if game_over:
+        return
 
     remove_ids = []
 
@@ -223,7 +264,9 @@ def build_response():
     return {
         "players": players,
         "projectiles": list(projectiles.values()),
-        "weapon_drop": weapon_drop
+        "weapon_drop": weapon_drop,
+        "game_over": game_over,
+        "winner_id": winner_id
     }
 
 
@@ -232,10 +275,12 @@ def handle_client(conn, addr, cid):
 
     print(f"FORBUNDET: {addr} som spiller {cid}")
 
+    spawn_x, spawn_y = get_random_spawn()
+
     with lock:
         players[cid] = {
-            "x": 100,
-            "y": 800,
+            "x": spawn_x,
+            "y": spawn_y,
             "direction": 1,
             "weapon": None,
             "ammo": 0,
@@ -266,24 +311,26 @@ def handle_client(conn, addr, cid):
                 player_data = json.loads(line)
 
                 with lock:
-                    players[cid]["x"] = player_data.get("x", players[cid]["x"])
-                    players[cid]["y"] = player_data.get("y", players[cid]["y"])
-                    players[cid]["direction"] = player_data.get("direction", 1)
-                    players[cid]["weapon"] = player_data.get("weapon")
-                    players[cid]["ammo"] = player_data.get("ammo", 0)
+                    if cid in players and players[cid]["lives"] > 0:
+                        players[cid]["x"] = player_data.get("x", players[cid]["x"])
+                        players[cid]["y"] = player_data.get("y", players[cid]["y"])
+                        players[cid]["direction"] = player_data.get("direction", 1)
+                        players[cid]["weapon"] = player_data.get("weapon")
+                        players[cid]["ammo"] = player_data.get("ammo", 0)
 
-                    for projectile in player_data.get("new_projectiles", []):
-                        projectile["owner"] = cid
-                        projectile["id"] = next_proj_id
+                        if not game_over:
+                            for projectile in player_data.get("new_projectiles", []):
+                                projectile["owner"] = cid
+                                projectile["id"] = next_proj_id
 
-                        if projectile.get("is_laser"):
-                            projectile["created_at"] = get_time()
+                                if projectile.get("is_laser"):
+                                    projectile["created_at"] = get_time()
 
-                        projectiles[next_proj_id] = projectile
-                        next_proj_id += 1
+                                projectiles[next_proj_id] = projectile
+                                next_proj_id += 1
 
-                    if player_data.get("picked_up_weapon"):
-                        remove_weapon()
+                            if player_data.get("picked_up_weapon"):
+                                remove_weapon()
 
                     response = build_response()
 
