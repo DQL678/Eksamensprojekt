@@ -72,6 +72,17 @@ def get_random_spawn():
     ])
 
 
+def reset_round():
+    global projectiles, weapon_drop, weapon_drop_timer, game_over, winner_id, next_proj_id
+
+    projectiles = {}
+    next_proj_id = 1
+    weapon_drop = None
+    weapon_drop_timer = get_time()
+    game_over = False
+    winner_id = None
+
+
 def rects_collide(a, b):
     return (
         a["x"] < b["x"] + b["w"] and
@@ -146,8 +157,6 @@ def damage_player(target_id, damage, owner_id):
             players[target_id]["slowed_until"] = 0
             players[target_id]["slow_amount"] = 0
 
-            # Vigtigt:
-            # I kort tid efter respawn må clienten ikke overskrive serverens nye position.
             players[target_id]["respawn_protection_until"] = get_time() + 0.5
 
 
@@ -352,7 +361,6 @@ def handle_client(conn, addr, cid):
                     if cid in players and players[cid]["lives"] > 0:
                         now = get_time()
 
-                        # Hvis spilleren lige er respawnet, skal serverens position beholdes.
                         if now > players[cid].get("respawn_protection_until", 0):
                             players[cid]["x"] = player_data.get("x", players[cid]["x"])
                             players[cid]["y"] = player_data.get("y", players[cid]["y"])
@@ -393,6 +401,9 @@ def handle_client(conn, addr, cid):
 
         for proj_id in remove_ids:
             projectiles.pop(proj_id, None)
+
+        if len(players) == 0:
+            reset_round()
 
     conn.close()
     print(f"AFBRUDT: spiller {cid}")
