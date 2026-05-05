@@ -136,14 +136,19 @@ def damage_player(target_id, damage, owner_id):
             players[target_id]["hitpoints"] = 0
             check_game_over()
         else:
+            spawn_x, spawn_y = get_random_spawn()
+
             players[target_id]["hitpoints"] = 100
+            players[target_id]["x"] = spawn_x
+            players[target_id]["y"] = spawn_y
+
             players[target_id]["frozen_until"] = 0
             players[target_id]["slowed_until"] = 0
             players[target_id]["slow_amount"] = 0
 
-            spawn_x, spawn_y = get_random_spawn()
-            players[target_id]["x"] = spawn_x
-            players[target_id]["y"] = spawn_y
+            # Vigtigt:
+            # I kort tid efter respawn må clienten ikke overskrive serverens nye position.
+            players[target_id]["respawn_protection_until"] = get_time() + 0.5
 
 
 def maybe_spawn_weapon():
@@ -318,7 +323,8 @@ def handle_client(conn, addr, cid):
             "score": 0,
             "frozen_until": 0,
             "slowed_until": 0,
-            "slow_amount": 0
+            "slow_amount": 0,
+            "respawn_protection_until": 0
         }
 
     conn.send((str(cid) + "\n").encode())
@@ -344,8 +350,13 @@ def handle_client(conn, addr, cid):
 
                 with lock:
                     if cid in players and players[cid]["lives"] > 0:
-                        players[cid]["x"] = player_data.get("x", players[cid]["x"])
-                        players[cid]["y"] = player_data.get("y", players[cid]["y"])
+                        now = get_time()
+
+                        # Hvis spilleren lige er respawnet, skal serverens position beholdes.
+                        if now > players[cid].get("respawn_protection_until", 0):
+                            players[cid]["x"] = player_data.get("x", players[cid]["x"])
+                            players[cid]["y"] = player_data.get("y", players[cid]["y"])
+
                         players[cid]["direction"] = player_data.get("direction", 1)
                         players[cid]["weapon"] = player_data.get("weapon")
                         players[cid]["ammo"] = player_data.get("ammo", 0)
