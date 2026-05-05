@@ -8,20 +8,20 @@
         "size": 8,
         "range": 500,
         "count": 1,
-        "damage": 15
+        "damage": 8
       },
       "reload_speed": 1200,
       "ammo_capacity": 12
     },
     {
       "name": "Sniper",
-      "fire_rate": 900,
+      "fire_rate": 1000,
       "projectile": {
         "speed": 18,
         "size": 12,
         "range": 900,
         "count": 1,
-        "damage": 45
+        "damage": 30
       },
       "reload_speed": 2500,
       "ammo_capacity": 5
@@ -32,7 +32,7 @@
       "projectile": {
         "speed": 14,
         "size": 6,
-        "range": 260,
+        "range": 300,
         "count": 5,
         "damage": 8
       },
@@ -45,9 +45,9 @@
       "projectile": {
         "speed": 16,
         "size": 5,
-        "range": 500,
+        "range": 600,
         "count": 1,
-        "damage": 24
+        "damage": 10
       },
       "reload_speed": 2000,
       "ammo_capacity": 20
@@ -60,7 +60,7 @@
         "size": 4,
         "range": 700,
         "count": 1,
-        "damage": 6
+        "damage": 4
       },
       "reload_speed": 3000,
       "ammo_capacity": 50
@@ -76,7 +76,7 @@
         "damage": 10
       },
       "reload_speed": 900,
-      "ammo_capacity": 18,
+      "ammo_capacity": 10,
       "special": {
         "type": "freeze",
         "duration": 3000
@@ -110,7 +110,7 @@
         "damage": 8
       },
       "reload_speed": 1700,
-      "ammo_capacity": 20,
+      "ammo_capacity": 15,
       "special": {
         "type": "slow",
         "duration": 3000,
