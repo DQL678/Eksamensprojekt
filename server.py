@@ -95,6 +95,28 @@ def check_game_over():
         winner_id = alive_players[0]
 
 
+def apply_special_effect(target_id, projectile):
+    if target_id not in players:
+        return
+
+    special_type = projectile.get("special_type")
+    special_duration = projectile.get("special_duration", 0)
+    special_amount = projectile.get("special_amount", 0)
+
+    if special_type == "freeze":
+        players[target_id]["frozen_until"] = max(
+            players[target_id].get("frozen_until", 0),
+            get_time() + special_duration / 1000
+        )
+
+    if special_type == "slow":
+        players[target_id]["slowed_until"] = max(
+            players[target_id].get("slowed_until", 0),
+            get_time() + special_duration / 1000
+        )
+        players[target_id]["slow_amount"] = special_amount
+
+
 def damage_player(target_id, damage, owner_id):
     if target_id not in players:
         return
@@ -115,6 +137,10 @@ def damage_player(target_id, damage, owner_id):
             check_game_over()
         else:
             players[target_id]["hitpoints"] = 100
+            players[target_id]["frozen_until"] = 0
+            players[target_id]["slowed_until"] = 0
+            players[target_id]["slow_amount"] = 0
+
             spawn_x, spawn_y = get_random_spawn()
             players[target_id]["x"] = spawn_x
             players[target_id]["y"] = spawn_y
@@ -206,6 +232,7 @@ def update_projectiles():
 
                 if rects_collide(laser_rect, player_rect):
                     damage_player(player_id, projectile.get("damage", 0), owner_id)
+                    apply_special_effect(player_id, projectile)
 
             continue
 
@@ -237,6 +264,7 @@ def update_projectiles():
 
             if rects_collide(projectile_rect, player_rect):
                 damage_player(player_id, projectile.get("damage", 0), owner_id)
+                apply_special_effect(player_id, projectile)
                 remove_ids.append(proj_id)
                 break
 
@@ -266,7 +294,8 @@ def build_response():
         "projectiles": list(projectiles.values()),
         "weapon_drop": weapon_drop,
         "game_over": game_over,
-        "winner_id": winner_id
+        "winner_id": winner_id,
+        "server_time": get_time()
     }
 
 
@@ -286,7 +315,10 @@ def handle_client(conn, addr, cid):
             "ammo": 0,
             "hitpoints": 100,
             "lives": 3,
-            "score": 0
+            "score": 0,
+            "frozen_until": 0,
+            "slowed_until": 0,
+            "slow_amount": 0
         }
 
     conn.send((str(cid) + "\n").encode())

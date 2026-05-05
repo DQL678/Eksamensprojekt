@@ -114,7 +114,7 @@
       "special": {
         "type": "slow",
         "duration": 3000,
-        "amount": 0.3
+        "amount": 0.5
       }
     }
   ]

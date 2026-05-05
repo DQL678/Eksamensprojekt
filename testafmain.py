@@ -446,6 +446,21 @@ class GameApp:
                 self.player.hitpoints = pdata.get("hitpoints", self.player.hitpoints)
                 self.player.lives = pdata.get("lives", self.player.lives)
                 self.player.score = pdata.get("score", self.player.score)
+
+                current_time = pygame.time.get_ticks()
+                server_time_now = response.get("server_time", 0)
+
+                frozen_until = pdata.get("frozen_until", 0)
+                slowed_until = pdata.get("slowed_until", 0)
+                slow_amount = pdata.get("slow_amount", 0)
+
+                if frozen_until > server_time_now:
+                    time_left = int((frozen_until - server_time_now) * 1000)
+                    self.player.freeze(time_left, current_time)
+
+                if slowed_until > server_time_now:
+                    time_left = int((slowed_until - server_time_now) * 1000)
+                    self.player.apply_slow(time_left, slow_amount, current_time)
             else:
                 self.other_players[pid_str] = pdata
 

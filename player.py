@@ -35,7 +35,16 @@ class Player:
         self.slow_amount = 0
 
     def draw(self, win):
-        pygame.draw.rect(win, self.color, self.rect)
+        current_time = pygame.time.get_ticks()
+
+        draw_color = self.color
+
+        if self.is_frozen(current_time):
+            draw_color = (100, 200, 255)
+        elif self.is_slowed(current_time):
+            draw_color = (200, 200, 255)
+
+        pygame.draw.rect(win, draw_color, self.rect)
 
         if self.current_weapon is not None:
             if self.current_weapon.image is not None:
