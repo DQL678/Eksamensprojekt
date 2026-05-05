@@ -536,9 +536,9 @@ class GameApp:
 
                     if direction == -1:
                         scaled = pygame.transform.flip(scaled, True, False)
-                        weapon_x = x - width + 10
+                        weapon_x = x - width + 30
                     else:
-                        weapon_x = x + 40 - 10
+                        weapon_x = x + 40 - 30
 
                     weapon_y = y + 30 - height // 2
                     surface.blit(scaled, (weapon_x, weapon_y))
