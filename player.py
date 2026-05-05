@@ -56,9 +56,9 @@ class Player:
 
                 if self.direction == -1:
                     weapon_image = pygame.transform.flip(weapon_image, True, False)
-                    weapon_x = self.rect.left - weapon_width + 10
+                    weapon_x = self.rect.left - weapon_width + 30
                 else:
-                    weapon_x = self.rect.right - 10
+                    weapon_x = self.rect.right - 30
 
                 weapon_y = self.rect.centery - weapon_height // 2
                 win.blit(weapon_image, (weapon_x, weapon_y))
