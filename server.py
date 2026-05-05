@@ -41,6 +41,8 @@ WEAPON_DELAY = 5.0
 lock = threading.Lock()
 next_client_id = 1
 
+TICK_RATE = 60  # updates per sekund
+
 WEAPON_NAMES = [
     "Handgun", "Sniper", "Shotgun",
     "Assault Rifle", "Minigun", "Freeze Gun",
@@ -85,7 +87,6 @@ def update_projectiles():
     remove_ids = []
     for pid, p in projectiles.items():
         if p.get("is_laser"):
-            # Lasere fjernes baseret på alder (duration i ms)
             age_ms = (get_time() - p["created_at"]) * 1000
             if age_ms >= p.get("range", 500):
                 remove_ids.append(pid)
@@ -97,6 +98,22 @@ def update_projectiles():
                 remove_ids.append(pid)
     for pid in remove_ids:
         projectiles.pop(pid, None)
+
+
+def game_loop():
+    # Kører på en fast 60 FPS uafhængigt af antal spillere - freddie !!!
+    while True:
+        start = get_time()
+
+        with lock:
+            maybe_spawn_weapon()
+            update_weapon()
+            update_projectiles()
+
+        elapsed = get_time() - start
+        sleep_time = (1.0 / TICK_RATE) - elapsed
+        if sleep_time > 0:
+            time.sleep(sleep_time)
 
 
 def build_response():
@@ -140,6 +157,7 @@ def handle_client(conn, addr, cid):
                 player_data = json.loads(line)
 
                 with lock:
+                    # Opdater spiller-position og stats
                     players[cid].update({
                         "x": player_data.get("x", players[cid]["x"]),
                         "y": player_data.get("y", players[cid]["y"]),
@@ -150,10 +168,6 @@ def handle_client(conn, addr, cid):
                         "lives": player_data.get("lives", 3),
                         "score": player_data.get("score", 0),
                     })
-
-                    maybe_spawn_weapon()
-                    update_weapon()
-                    update_projectiles()
 
                     # Tilføj nye projektiler med unikke ID'er
                     for proj in player_data.get("new_projectiles", []):
@@ -177,7 +191,6 @@ def handle_client(conn, addr, cid):
 
     with lock:
         players.pop(cid, None)
-        # Fjern spillerens projektiler når de disconnecter
         remove_ids = [pid for pid, p in projectiles.items() if p.get("owner") == cid]
         for pid in remove_ids:
             projectiles.pop(pid, None)
@@ -185,6 +198,9 @@ def handle_client(conn, addr, cid):
     conn.close()
     print(f"AFBRUDT: spiller {cid}")
 
+
+# Start game loop i baggrunden (kører fast på 60 FPS uanset spillerantal)
+threading.Thread(target=game_loop, daemon=True).start()
 
 while True:
     conn, addr = server.accept()
