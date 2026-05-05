@@ -87,16 +87,16 @@
       "fire_rate": 1000,
       "projectile": {
         "speed": 30,
-        "size": 14,
+        "size": 8,
         "range": 1600,
         "count": 1,
-        "damage": 8
+        "damage": 2
       },
       "reload_speed": 1800,
       "ammo_capacity": 5,
       "special": {
         "type": "laser",
-        "duration": 750
+        "duration": 300
       }
     },
     {
