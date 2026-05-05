@@ -4,6 +4,15 @@ import json
 import random
 import time
 
+def get_my_lan_IP():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+    finally:
+        s.close()
+    return ip
+
 HOST = "0.0.0.0"
 PORT = 5555
 
@@ -18,7 +27,9 @@ except OSError as e:
     exit(1)
 
 server.listen()
-print(f"SERVER KØRER på port {PORT}")
+
+IP = get_my_lan_IP()
+print(f"SERVER KØRER på port {PORT}, IP: {IP}")
 
 players = {}
 projectiles = {}  # proj_id -> projektil-dict
