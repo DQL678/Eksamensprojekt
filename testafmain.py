@@ -578,19 +578,14 @@ class GameApp:
         self.screen.blit(score_text, (20, 75))
 
         if self.player.current_weapon is None:
-            weapon_text = self.small_font.render(
-                "Weapon: None   Ammo: 0",
-                True,
-                (0, 0, 0)
-            )
+            weapon_text = self.small_font.render("Weapon: None", True, (0, 0, 0))
+            ammo_text = self.small_font.render("Ammo: 0", True, (0, 0, 0))
         else:
-            weapon_text = self.small_font.render(
-                f"Weapon: {self.player.current_weapon.name}   Ammo: {self.player.ammo}",
-                True,
-                (0, 0, 0)
-            )
+            weapon_text = self.small_font.render(f"Weapon: {self.player.current_weapon.name}", True,(0, 0, 0))
+            ammo_text = self.small_font.render(f"Ammo: {self.player.ammo}",True,(0, 0, 0))
 
         self.screen.blit(weapon_text, (20, 105))
+        self.screen.blit(ammo_text, (20, 130))
 
         if self.network:
             mp_text = self.small_font.render(
