@@ -364,9 +364,6 @@ class GameApp:
             "direction": self.player.direction,
             "weapon": weapon_name,
             "ammo": self.player.ammo,
-            "hitpoints": self.player.hitpoints,
-            "lives": self.player.lives,
-            "score": self.player.score,
             "new_projectiles": self.pending_projectiles,
             "picked_up_weapon": self.picked_up_weapon_flag,
         }
@@ -381,8 +378,13 @@ class GameApp:
         my_pid = self.network.player_id
 
         self.other_players = {}
+
         for pid_str, pdata in response["players"].items():
-            if int(pid_str) != my_pid:
+            if int(pid_str) == my_pid:
+                self.player.hitpoints = pdata.get("hitpoints", self.player.hitpoints)
+                self.player.lives = pdata.get("lives", self.player.lives)
+                self.player.score = pdata.get("score", self.player.score)
+            else:
                 self.other_players[pid_str] = pdata
 
         self.apply_server_weapon_drop(response.get("weapon_drop"))
@@ -393,7 +395,6 @@ class GameApp:
             self.picked_up_weapon_flag = True
 
         self.server_projectiles = response.get("projectiles", [])
-
     # -------------------------------------------------------------------------
     # Update
     # -------------------------------------------------------------------------
@@ -480,26 +481,66 @@ class GameApp:
 
     def draw_game_info(self):
         hp_text = self.small_font.render(
-            f"HP: {self.player.hitpoints}   Lives: {self.player.lives}", True, (0, 0, 0)
+            f"HP: {self.player.hitpoints} / 100   Lives: {self.player.lives}",
+            True,
+            (0, 0, 0)
         )
         self.screen.blit(hp_text, (20, 20))
 
-        score_text = self.small_font.render(f"Score: {self.player.score}", True, (0, 0, 0))
-        self.screen.blit(score_text, (20, 50))
+        bar_x = 20
+        bar_y = 48
+        bar_width = 200
+        bar_height = 18
+
+        pygame.draw.rect(
+            self.screen,
+            (80, 80, 80),
+            (bar_x, bar_y, bar_width, bar_height)
+        )
+
+        hp_percent = max(0, min(self.player.hitpoints / 100, 1))
+        current_bar_width = int(bar_width * hp_percent)
+
+        pygame.draw.rect(
+            self.screen,
+            (40, 200, 60),
+            (bar_x, bar_y, current_bar_width, bar_height)
+        )
+
+        pygame.draw.rect(
+            self.screen,
+            (0, 0, 0),
+            (bar_x, bar_y, bar_width, bar_height),
+            2
+        )
+
+        score_text = self.small_font.render(
+            f"Score: {self.player.score}",
+            True,
+            (0, 0, 0)
+        )
+        self.screen.blit(score_text, (20, 75))
 
         if self.player.current_weapon is None:
-            weapon_text = self.small_font.render("Weapon: None   Ammo: 0", True, (0, 0, 0))
+            weapon_text = self.small_font.render(
+                "Weapon: None   Ammo: 0",
+                True,
+                (0, 0, 0)
+            )
         else:
             weapon_text = self.small_font.render(
                 f"Weapon: {self.player.current_weapon.name}   Ammo: {self.player.ammo}",
-                True, (0, 0, 0)
+                True,
+                (0, 0, 0)
             )
-        self.screen.blit(weapon_text, (20, 80))
+
+        self.screen.blit(weapon_text, (20, 105))
 
         if self.network:
             mp_text = self.small_font.render(
                 f"Online – Spiller {self.network.player_id} | Øvrige: {len(self.other_players)}",
-                True, (30, 30, 180)
+                True,
+                (30, 30, 180)
             )
             self.screen.blit(mp_text, (20, self.screen_height - 36))
 

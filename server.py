@@ -4,6 +4,7 @@ import json
 import random
 import time
 
+
 def get_my_lan_IP():
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -13,8 +14,14 @@ def get_my_lan_IP():
         s.close()
     return ip
 
+
 HOST = "0.0.0.0"
 PORT = 5555
+
+BASE_WIDTH = 1600
+BASE_HEIGHT = 900
+PLAYER_WIDTH = 40
+PLAYER_HEIGHT = 60
 
 server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -32,8 +39,9 @@ IP = get_my_lan_IP()
 print(f"SERVER KØRER på port {PORT}, IP: {IP}")
 
 players = {}
-projectiles = {}  # proj_id -> projektil-dict
+projectiles = {}
 next_proj_id = 1
+
 weapon_drop = None
 weapon_drop_timer = 0
 WEAPON_DELAY = 5.0
@@ -41,7 +49,7 @@ WEAPON_DELAY = 5.0
 lock = threading.Lock()
 next_client_id = 1
 
-TICK_RATE = 60  # updates per sekund
+TICK_RATE = 60
 
 WEAPON_NAMES = [
     "Handgun", "Sniper", "Shotgun",
@@ -54,8 +62,35 @@ def get_time():
     return time.time()
 
 
+def rects_collide(a, b):
+    return (
+        a["x"] < b["x"] + b["w"] and
+        a["x"] + a["w"] > b["x"] and
+        a["y"] < b["y"] + b["h"] and
+        a["y"] + a["h"] > b["y"]
+    )
+
+
+def damage_player(target_id, damage, owner_id):
+    if target_id not in players:
+        return
+
+    players[target_id]["hitpoints"] -= damage
+
+    if players[target_id]["hitpoints"] <= 0:
+        players[target_id]["lives"] -= 1
+        players[target_id]["hitpoints"] = 100
+
+        players[target_id]["x"] = random.choice([100, 760, 1400])
+        players[target_id]["y"] = 800
+
+        if owner_id in players:
+            players[owner_id]["score"] += 1
+
+
 def maybe_spawn_weapon():
     global weapon_drop, weapon_drop_timer
+
     if weapon_drop is None:
         if get_time() - weapon_drop_timer >= WEAPON_DELAY:
             weapon_drop = {
@@ -68,40 +103,107 @@ def maybe_spawn_weapon():
 
 def update_weapon():
     global weapon_drop
+
     if weapon_drop is None:
         return
+
     weapon_drop["y_velocity"] = min(weapon_drop.get("y_velocity", 0) + 0.18, 4)
     weapon_drop["y"] += weapon_drop["y_velocity"]
+
     if weapon_drop["y"] > 920:
         remove_weapon()
 
 
 def remove_weapon():
     global weapon_drop, weapon_drop_timer
+
     weapon_drop = None
     weapon_drop_timer = get_time()
 
 
 def update_projectiles():
     global projectiles
+
     remove_ids = []
-    for pid, p in projectiles.items():
-        if p.get("is_laser"):
-            age_ms = (get_time() - p["created_at"]) * 1000
-            if age_ms >= p.get("range", 500):
-                remove_ids.append(pid)
-        else:
-            p["x"] += p["dir"] * p["speed"]
-            p["y"] += p.get("y_speed", 0)
-            p["distance"] += abs(p["speed"])
-            if p["distance"] >= p["range"]:
-                remove_ids.append(pid)
-    for pid in remove_ids:
-        projectiles.pop(pid, None)
+
+    for proj_id, projectile in list(projectiles.items()):
+        owner_id = projectile.get("owner")
+
+        if projectile.get("is_laser"):
+            age_ms = (get_time() - projectile["created_at"]) * 1000
+
+            if age_ms >= projectile.get("range", 500):
+                remove_ids.append(proj_id)
+                continue
+
+            direction = projectile.get("dir", 1)
+
+            if direction == 1:
+                laser_x = projectile["x"]
+                laser_width = BASE_WIDTH - projectile["x"]
+            else:
+                laser_x = 0
+                laser_width = projectile["x"]
+
+            laser_rect = {
+                "x": laser_x,
+                "y": projectile["y"] - projectile.get("size", 8) // 2,
+                "w": laser_width,
+                "h": projectile.get("size", 8)
+            }
+
+            for player_id, player in players.items():
+                if player_id == owner_id:
+                    continue
+
+                player_rect = {
+                    "x": player["x"],
+                    "y": player["y"],
+                    "w": PLAYER_WIDTH,
+                    "h": PLAYER_HEIGHT
+                }
+
+                if rects_collide(laser_rect, player_rect):
+                    damage_player(player_id, projectile.get("damage", 0), owner_id)
+
+            continue
+
+        projectile["x"] += projectile["dir"] * projectile["speed"]
+        projectile["y"] += projectile.get("y_speed", 0)
+        projectile["distance"] += abs(projectile["speed"])
+
+        if projectile["distance"] >= projectile["range"]:
+            remove_ids.append(proj_id)
+            continue
+
+        projectile_rect = {
+            "x": projectile["x"],
+            "y": projectile["y"],
+            "w": projectile.get("size", 8),
+            "h": projectile.get("size", 8)
+        }
+
+        for player_id, player in players.items():
+            if player_id == owner_id:
+                continue
+
+            player_rect = {
+                "x": player["x"],
+                "y": player["y"],
+                "w": PLAYER_WIDTH,
+                "h": PLAYER_HEIGHT
+            }
+
+            if rects_collide(projectile_rect, player_rect):
+                damage_player(player_id, projectile.get("damage", 0), owner_id)
+                remove_ids.append(proj_id)
+                break
+
+    for proj_id in remove_ids:
+        projectiles.pop(proj_id, None)
 
 
 def game_loop():
-    # Kører på en fast 60 FPS uafhængigt af antal spillere - freddie !!!
     while True:
         start = get_time()
 
@@ -112,6 +214,7 @@ def game_loop():
 
         elapsed = get_time() - start
         sleep_time = (1.0 / TICK_RATE) - elapsed
+
         if sleep_time > 0:
             time.sleep(sleep_time)
 
@@ -125,16 +228,20 @@ def build_response():
 
 
 def handle_client(conn, addr, cid):
-    global players, projectiles, next_proj_id, weapon_drop
+    global players, projectiles, next_proj_id
 
     print(f"FORBUNDET: {addr} som spiller {cid}")
 
     with lock:
         players[cid] = {
-            "x": 100, "y": 800,
+            "x": 100,
+            "y": 800,
             "direction": 1,
-            "weapon": None, "ammo": 0,
-            "hitpoints": 100, "lives": 3, "score": 0
+            "weapon": None,
+            "ammo": 0,
+            "hitpoints": 100,
+            "lives": 3,
+            "score": 0
         }
 
     conn.send((str(cid) + "\n").encode())
@@ -144,6 +251,7 @@ def handle_client(conn, addr, cid):
     while True:
         try:
             data = conn.recv(8192).decode()
+
             if not data:
                 break
 
@@ -151,31 +259,27 @@ def handle_client(conn, addr, cid):
 
             while "\n" in buffer:
                 line, buffer = buffer.split("\n", 1)
+
                 if not line.strip():
                     continue
 
                 player_data = json.loads(line)
 
                 with lock:
-                    # Opdater spiller-position og stats
-                    players[cid].update({
-                        "x": player_data.get("x", players[cid]["x"]),
-                        "y": player_data.get("y", players[cid]["y"]),
-                        "direction": player_data.get("direction", 1),
-                        "weapon": player_data.get("weapon"),
-                        "ammo": player_data.get("ammo", 0),
-                        "hitpoints": player_data.get("hitpoints", 100),
-                        "lives": player_data.get("lives", 3),
-                        "score": player_data.get("score", 0),
-                    })
+                    players[cid]["x"] = player_data.get("x", players[cid]["x"])
+                    players[cid]["y"] = player_data.get("y", players[cid]["y"])
+                    players[cid]["direction"] = player_data.get("direction", 1)
+                    players[cid]["weapon"] = player_data.get("weapon")
+                    players[cid]["ammo"] = player_data.get("ammo", 0)
 
-                    # Tilføj nye projektiler med unikke ID'er
-                    for proj in player_data.get("new_projectiles", []):
-                        proj["owner"] = cid
-                        proj["id"] = next_proj_id
-                        if proj.get("is_laser"):
-                            proj["created_at"] = get_time()
-                        projectiles[next_proj_id] = proj
+                    for projectile in player_data.get("new_projectiles", []):
+                        projectile["owner"] = cid
+                        projectile["id"] = next_proj_id
+
+                        if projectile.get("is_laser"):
+                            projectile["created_at"] = get_time()
+
+                        projectiles[next_proj_id] = projectile
                         next_proj_id += 1
 
                     if player_data.get("picked_up_weapon"):
@@ -191,22 +295,28 @@ def handle_client(conn, addr, cid):
 
     with lock:
         players.pop(cid, None)
-        remove_ids = [pid for pid, p in projectiles.items() if p.get("owner") == cid]
-        for pid in remove_ids:
-            projectiles.pop(pid, None)
+
+        remove_ids = [
+            proj_id for proj_id, projectile in projectiles.items()
+            if projectile.get("owner") == cid
+        ]
+
+        for proj_id in remove_ids:
+            projectiles.pop(proj_id, None)
 
     conn.close()
     print(f"AFBRUDT: spiller {cid}")
 
 
-# Start game loop i baggrunden (kører fast på 60 FPS uanset spillerantal)
 threading.Thread(target=game_loop, daemon=True).start()
 
 while True:
     conn, addr = server.accept()
+
     with lock:
         cid = next_client_id
         next_client_id += 1
+
     thread = threading.Thread(
         target=handle_client,
         args=(conn, addr, cid),
