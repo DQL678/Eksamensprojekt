@@ -644,6 +644,8 @@ class GameApp:
 
     def draw_other_players(self, surface):
         for pid, pdata in self.other_players.items():
+            if pdata.get("lives", 1) <= 0:
+                continue
             x = int(pdata.get("x", 0))
             y = int(pdata.get("y", 0))
 
