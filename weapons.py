@@ -7,10 +7,7 @@ import os
 def load_weapon_data():
     folder = os.path.dirname(__file__)
 
-    possible_filenames = [
-        "Weapons_Data.json",
-        "Weapons_Data"
-    ]
+    possible_filenames = ["Weapons_Data.json", "Weapons_Data"]
 
     for filename in possible_filenames:
         filepath = os.path.join(folder, filename)
@@ -19,9 +16,7 @@ def load_weapon_data():
             with open(filepath, "r", encoding="utf-8") as file:
                 return json.load(file)["weapons"]
 
-    raise FileNotFoundError(
-        "Could not find Weapons_Data.json or Weapons_Data in the same folder as weapons.py"
-    )
+    raise FileNotFoundError("Could not find Weapons_Data.json or Weapons_Data in the same folder as weapons.py")
 
 
 weapon_data_list = load_weapon_data()
@@ -300,10 +295,7 @@ class LaserBeam:
         closest_distance = screen_width
 
         for platform in platforms:
-            laser_hits_platform_height = (
-                laser_bottom >= platform.top and
-                laser_top <= platform.bottom
-            )
+            laser_hits_platform_height = (laser_bottom >= platform.top and laser_top <= platform.bottom)
 
             if laser_hits_platform_height:
                 if self.direction == 1 and platform.left > self.x:
@@ -326,13 +318,7 @@ class LaserBeam:
         pass
 
     def draw(self, screen):
-        pygame.draw.line(
-            screen,
-            self.color,
-            self.start_pos,
-            self.end_pos,
-            self.size
-        )
+        pygame.draw.line(screen, self.color, self.start_pos, self.end_pos, self.size)
 
     def has_reached_max_range(self):
         current_time = pygame.time.get_ticks()

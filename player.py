@@ -49,10 +49,7 @@ class Player:
         if self.current_weapon is not None:
             if self.current_weapon.image is not None:
                 weapon_width, weapon_height = self.current_weapon.image_size
-                weapon_image = pygame.transform.scale(
-                    self.current_weapon.image,
-                    (weapon_width, weapon_height)
-                )
+                weapon_image = pygame.transform.scale(self.current_weapon.image,(weapon_width, weapon_height))
 
                 if self.direction == -1:
                     weapon_image = pygame.transform.flip(weapon_image, True, False)
@@ -171,19 +168,13 @@ class Player:
         center_y = self.rect.centery
 
         if count == 1:
-            projectile_positions.append({
-                "x": center_x,
-                "y": center_y
-            })
+            projectile_positions.append({"x": center_x, "y": center_y})
         else:
             spacing = 10
             start_y = center_y - ((count - 1) * spacing) // 2
 
             for i in range(count):
-                projectile_positions.append({
-                    "x": center_x,
-                    "y": start_y + i * spacing
-                })
+                projectile_positions.append({"x": center_x, "y": start_y + i * spacing})
 
         return projectile_positions
 
@@ -214,8 +205,4 @@ class Player:
             self.freeze(projectile.special_duration, current_time)
 
         if projectile.special_type == "slow":
-            self.apply_slow(
-                projectile.special_duration,
-                projectile.special_amount,
-                current_time
-            )
+            self.apply_slow(projectile.special_duration, projectile.special_amount, current_time)

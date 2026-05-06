@@ -13,8 +13,8 @@ class Button:
         self.text = text
 
     def draw(self, screen, font):
-        pygame.draw.rect(screen, (80, 80, 80), self.rect)
-        pygame.draw.rect(screen, (230, 230, 230), self.rect, 2)
+        pygame.draw.rect(screen,(80, 80, 80), self.rect)
+        pygame.draw.rect(screen,(230, 230, 230), self.rect,2)
 
         text_surface = font.render(self.text, True, (255, 255, 255))
         text_rect = text_surface.get_rect(center=self.rect.center)
@@ -71,13 +71,8 @@ class Slider:
         text_rect = text_surface.get_rect(center=(self.x + self.width // 2, self.y - 30))
         screen.blit(text_surface, text_rect)
 
-        pygame.draw.rect(screen, (170, 170, 170), self.bar_rect)
-        pygame.draw.circle(
-            screen,
-            (240, 240, 240),
-            (self.get_handle_x(), self.y + 3),
-            self.handle_radius
-        )
+        pygame.draw.rect(screen,(170, 170, 170), self.bar_rect)
+        pygame.draw.circle(screen,(240, 240, 240),(self.get_handle_x(), self.y + 3), self.handle_radius)
 
 
 class TextInput:
@@ -142,10 +137,7 @@ class GameApp:
         self.screen_width = 1200
         self.screen_height = 700
 
-        self.screen = pygame.display.set_mode(
-            (self.screen_width, self.screen_height),
-            pygame.RESIZABLE
-        )
+        self.screen = pygame.display.set_mode((self.screen_width, self.screen_height),pygame.RESIZABLE)
         pygame.display.set_caption("Gun Man Game")
 
         self.clock = pygame.time.Clock()
@@ -196,9 +188,7 @@ class GameApp:
 
     def load_background_music(self):
         music_path = os.path.join(
-            os.path.dirname(__file__),
-            "Lydfiler/Masked Dedede - Kirby Triple Deluxe Music Extended.mp3"
-        )
+            os.path.dirname(__file__), "Lydfiler/Masked Dedede - Kirby Triple Deluxe Music Extended.mp3")
 
         try:
             pygame.mixer.music.load(music_path)
@@ -235,13 +225,7 @@ class GameApp:
         input_width = int(self.screen_width * 0.3)
         input_x = self.center_horizontally(input_width)
 
-        self.ip_input = TextInput(
-            input_x,
-            int(self.screen_height * 0.40),
-            input_width,
-            44,
-            "Server IP (f.eks. 192.168.1.5)"
-        )
+        self.ip_input = TextInput( input_x,int(self.screen_height * 0.40),input_width, 44,"Server IP (f.eks. 192.168.1.5)" )
 
         self.connect_button = Button(button_x, int(self.screen_height * 0.54), button_width, button_height, "Forbind")
 
@@ -294,9 +278,7 @@ class GameApp:
             self.start_game(requested_map)
             return
 
-        data = {
-            "selected_map_request": requested_map
-        }
+        data = {"selected_map_request": requested_map}
 
         response = self.network.send_player_data(data)
 
@@ -635,10 +617,7 @@ class GameApp:
                 x = int(projectile["x"])
                 y = int(projectile["y"])
 
-                color = PROJECTILE_COLORS.get(
-                    projectile.get("weapon", ""),
-                    DEFAULT_PROJECTILE_COLOR
-                )
+                color = PROJECTILE_COLORS.get(projectile.get("weapon", ""),DEFAULT_PROJECTILE_COLOR)
 
                 pygame.draw.rect(surface, color, pygame.Rect(x, y, size, size))
 
@@ -690,7 +669,7 @@ class GameApp:
             for projectile in self.local_projectiles:
                 projectile.draw(surface)
 
-        scaled = pygame.transform.scale(surface, (self.screen_width, self.screen_height))
+        scaled = pygame.transform.scale(surface,(self.screen_width, self.screen_height))
         self.screen.blit(scaled, (0, 0))
 
         self.draw_game_info()
@@ -716,11 +695,7 @@ class GameApp:
         pygame.draw.rect(self.screen, (40, 200, 60), (bar_x, bar_y, current_bar_width, bar_height))
         pygame.draw.rect(self.screen, (0, 0, 0), (bar_x, bar_y, bar_width, bar_height), 2)
 
-        score_text = self.small_font.render(
-            f"Score: {self.player.score}",
-            True,
-            (0, 0, 0)
-        )
+        score_text = self.small_font.render(f"Score: {self.player.score}",True,(0, 0, 0))
         self.screen.blit(score_text, (20, 75))
 
         if self.player.current_weapon is None:
@@ -737,9 +712,9 @@ class GameApp:
             mp_text = self.small_font.render(
                 f"Online – Spiller {self.network.player_id} | Øvrige: {len(self.other_players)}",
                 True,
-                (30, 30, 180)
+                (124,252,0)
             )
-            self.screen.blit(mp_text, (20, self.screen_height - 36))
+            self.screen.blit(mp_text, (20, self.screen_height - 35))
 
     def draw_game_over(self):
         self.screen.fill((20, 20, 20))
@@ -754,32 +729,22 @@ class GameApp:
             color = (220, 60, 60)
 
         title = self.title_font.render(title_text, True, color)
-        title_rect = title.get_rect(
-            center=(self.screen_width // 2, int(self.screen_height * 0.35))
-        )
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.35)))
         self.screen.blit(title, title_rect)
         if self.game_over:
-            info_text = "Tryk ESC for at gå tilbage til menuen"
+            info_text = "Tryk på ESC-tasten for at gå tilbage til Menu."
         else:
-            info_text = "Du er ude. Vent på at runden bliver færdig."
+            info_text = "Du har tabt spillet. Vent på at runden bliver færdig."
 
-        info = self.text_font.render(
-            info_text,
-            True,
-            (255, 255, 255)
-        )
-        info_rect = info.get_rect(
-            center=(self.screen_width // 2, int(self.screen_height * 0.50))
-        )
+        info = self.text_font.render(info_text,True,(255, 255, 255))
+        info_rect = info.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.50)))
         self.screen.blit(info, info_rect)
 
     def draw_menu(self):
         self.screen.fill((25, 25, 25))
 
         title = self.title_font.render("Gun Man Game", True, (255, 255, 255))
-        title_rect = title.get_rect(
-            center=(self.screen_width // 2, int(self.screen_height * 0.18))
-        )
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.18)))
         self.screen.blit(title, title_rect)
 
         self.join_button.draw(self.screen, self.button_font)
@@ -790,9 +755,7 @@ class GameApp:
         self.screen.fill((25, 25, 25))
 
         title = self.title_font.render("Join Game", True, (255, 255, 255))
-        title_rect = title.get_rect(
-            center=(self.screen_width // 2, int(self.screen_height * 0.18))
-        )
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.18)))
         self.screen.blit(title, title_rect)
 
         label = self.text_font.render("Server IP-adresse:", True, (200, 200, 200))
@@ -804,18 +767,14 @@ class GameApp:
 
         if self.connection_error:
             error_text = self.text_font.render(self.connection_error, True, (220, 60, 60))
-            error_rect = error_text.get_rect(
-                center=(self.screen_width // 2, int(self.screen_height * 0.65))
-            )
+            error_rect = error_text.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.65)))
             self.screen.blit(error_text, error_rect)
 
     def draw_map_select(self):
         self.screen.fill((25, 25, 25))
 
         title = self.title_font.render("Vælg Map", True, (255, 255, 255))
-        title_rect = title.get_rect(
-            center=(self.screen_width // 2, int(self.screen_height * 0.18))
-        )
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.18)))
         self.screen.blit(title, title_rect)
 
         self.map1_button.draw(self.screen, self.button_font)
@@ -825,9 +784,7 @@ class GameApp:
         self.screen.fill((40, 40, 60))
 
         title = self.title_font.render("Settings", True, (255, 255, 255))
-        title_rect = title.get_rect(
-            center=(self.screen_width // 2, int(self.screen_height * 0.16))
-        )
+        title_rect = title.get_rect(center=(self.screen_width // 2, int(self.screen_height * 0.16)))
         self.screen.blit(title, title_rect)
 
         self.music_slider.draw(self.screen, self.text_font)
@@ -886,10 +843,7 @@ class GameApp:
                 if event.type == pygame.VIDEORESIZE:
                     self.screen_width = event.w
                     self.screen_height = event.h
-                    self.screen = pygame.display.set_mode(
-                        (event.w, event.h),
-                        pygame.RESIZABLE
-                    )
+                    self.screen = pygame.display.set_mode((event.w, event.h),pygame.RESIZABLE)
                     self.resize_ui()
 
                 if self.state == "menu":
