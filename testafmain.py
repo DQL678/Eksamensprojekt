@@ -256,6 +256,29 @@ class GameApp:
             self.network = None
             self.connection_error = f"Kunne ikke forbinde: {e}"
 
+    def select_map(self, requested_map):
+        if not self.network:
+            self.start_game(requested_map)
+            return
+
+        data = {
+            "selected_map_request": requested_map
+        }
+
+        response = self.network.send_player_data(data)
+
+        if response is None:
+            self.connection_error = "Kunne ikke vælge map"
+            self.state = "menu"
+            return
+
+        map_to_start = response.get("selected_map", requested_map)
+
+        if map_to_start is None:
+            map_to_start = requested_map
+
+        self.start_game(map_to_start)
+
     def spawn_weapon(self):
         self.weapon_drop = WeaponDrop(self.base_width)
 
@@ -596,8 +619,8 @@ class GameApp:
             weapon_text = self.small_font.render("Weapon: None", True, (0, 0, 0))
             ammo_text = self.small_font.render("Ammo: 0", True, (0, 0, 0))
         else:
-            weapon_text = self.small_font.render(f"Weapon: {self.player.current_weapon.name}", True,(0, 0, 0))
-            ammo_text = self.small_font.render(f"Ammo: {self.player.ammo}",True,(0, 0, 0))
+            weapon_text = self.small_font.render(f"Weapon: {self.player.current_weapon.name}", True, (0, 0, 0))
+            ammo_text = self.small_font.render(f"Ammo: {self.player.ammo}", True, (0, 0, 0))
 
         self.screen.blit(weapon_text, (20, 105))
         self.screen.blit(ammo_text, (20, 130))
@@ -769,9 +792,9 @@ class GameApp:
                 elif self.state == "map_select":
                     if event.type == pygame.MOUSEBUTTONDOWN:
                         if self.map1_button.is_clicked(event.pos):
-                            self.start_game(1)
+                            self.select_map(1)
                         elif self.map2_button.is_clicked(event.pos):
-                            self.start_game(2)
+                            self.select_map(2)
 
                 elif self.state == "settings":
                     self.music_slider.handle_event(event)

@@ -52,6 +52,7 @@ TICK_RATE = 60
 
 game_over = False
 winner_id = None
+selected_map = None
 
 WEAPON_NAMES = [
     "Handgun", "Sniper", "Shotgun",
@@ -73,14 +74,35 @@ def get_random_spawn():
 
 
 def reset_round():
-    global projectiles, weapon_drop, weapon_drop_timer, game_over, winner_id, next_proj_id
+    global projectiles
+    global weapon_drop
+    global weapon_drop_timer
+    global game_over
+    global winner_id
+    global next_proj_id
+    global next_client_id
+    global selected_map
 
     projectiles = {}
     next_proj_id = 1
+
     weapon_drop = None
     weapon_drop_timer = get_time()
+
     game_over = False
     winner_id = None
+
+    selected_map = None
+    next_client_id = 1
+
+
+def choose_map(requested_map):
+    global selected_map
+
+    if selected_map is None:
+        selected_map = requested_map
+
+    return selected_map
 
 
 def rects_collide(a, b):
@@ -309,7 +331,8 @@ def build_response():
         "weapon_drop": weapon_drop,
         "game_over": game_over,
         "winner_id": winner_id,
-        "server_time": get_time()
+        "server_time": get_time(),
+        "selected_map": selected_map
     }
 
 
@@ -358,6 +381,12 @@ def handle_client(conn, addr, cid):
                 player_data = json.loads(line)
 
                 with lock:
+                    if "selected_map_request" in player_data:
+                        choose_map(player_data["selected_map_request"])
+                        response = build_response()
+                        conn.send((json.dumps(response) + "\n").encode())
+                        continue
+
                     if cid in players and players[cid]["lives"] > 0:
                         now = get_time()
 
