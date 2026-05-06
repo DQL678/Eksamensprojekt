@@ -8,22 +8,22 @@
         "size": 8,
         "range": 500,
         "count": 1,
-        "damage": 20
+        "damage": 8
       },
       "reload_speed": 1200,
       "ammo_capacity": 12
     },
     {
       "name": "Sniper",
-      "fire_rate": 900,
+      "fire_rate": 1000,
       "projectile": {
         "speed": 18,
         "size": 12,
         "range": 900,
         "count": 1,
-        "damage": 45
+        "damage": 30
       },
-      "reload_speed": 1800,
+      "reload_speed": 2500,
       "ammo_capacity": 5
     },
     {
@@ -32,9 +32,9 @@
       "projectile": {
         "speed": 14,
         "size": 6,
-        "range": 260,
+        "range": 300,
         "count": 5,
-        "damage": 28
+        "damage": 8
       },
       "reload_speed": 1200,
       "ammo_capacity": 6
@@ -45,12 +45,12 @@
       "projectile": {
         "speed": 16,
         "size": 5,
-        "range": 500,
+        "range": 600,
         "count": 1,
-        "damage": 24
+        "damage": 10
       },
-      "reload_speed": 1500,
-      "ammo_capacity": 24
+      "reload_speed": 2000,
+      "ammo_capacity": 20
     },
     {
       "name": "Minigun",
@@ -60,10 +60,10 @@
         "size": 4,
         "range": 700,
         "count": 1,
-        "damage": 12
+        "damage": 4
       },
-      "reload_speed": 2200,
-      "ammo_capacity": 60
+      "reload_speed": 3000,
+      "ammo_capacity": 50
     },
     {
       "name": "Freeze Gun",
@@ -76,7 +76,7 @@
         "damage": 10
       },
       "reload_speed": 900,
-      "ammo_capacity": 18,
+      "ammo_capacity": 10,
       "special": {
         "type": "freeze",
         "duration": 3000
@@ -90,7 +90,7 @@
         "size": 8,
         "range": 1600,
         "count": 1,
-        "damage": 2
+        "damage": 1
       },
       "reload_speed": 1800,
       "ammo_capacity": 5,
@@ -110,7 +110,7 @@
         "damage": 8
       },
       "reload_speed": 1700,
-      "ammo_capacity": 20,
+      "ammo_capacity": 15,
       "special": {
         "type": "slow",
         "duration": 3000,
