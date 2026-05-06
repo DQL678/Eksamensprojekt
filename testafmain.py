@@ -183,10 +183,21 @@ class GameApp:
 
         load_weapon_images()
 
+        self.pistol_sound = pygame.mixer.Sound("Lydfiler/Pistol.mp3")
+        self.shotgun_sound = pygame.mixer.Sound("Lydfiler/Shotgun.mp3")
+        self.minigun_sound = pygame.mixer.Sound("Lydfiler/Minigun.mp3")
+        self.laser_sound = pygame.mixer.Sound("Lydfiler/Laser.mp3")
+        self.freezegun_sound = pygame.mixer.Sound("Lydfiler/Freezegun.mp3")
+        self.snowball_sound = pygame.mixer.Sound("Lydfiler/SnowballCannon.mp3")
+        self.assault_rifle_sound = pygame.mixer.Sound("Lydfiler/AssaultRifle.mp3")
+        self.sniper_sound = pygame.mixer.Sound("Lydfiler/Sniper.mp3")
+        self.minigun_channel = None
+        self.minigun_sound_playing = False
+
     def load_background_music(self):
         music_path = os.path.join(
             os.path.dirname(__file__),
-            "Masked Dedede - Kirby Triple Deluxe Music Extended.mp3"
+            "Lydfiler/Masked Dedede - Kirby Triple Deluxe Music Extended.mp3"
         )
 
         try:
@@ -258,6 +269,8 @@ class GameApp:
 
         self.game_over = False
         self.winner_id = None
+
+        self.stop_minigun_sound()
 
         self.state = "game"
 
@@ -345,6 +358,55 @@ class GameApp:
         self.weapon_drop.y = drop_data["y"]
         self.weapon_drop.rect = pygame.Rect(drop_data["x"], drop_data["y"], 30, 20)
 
+    def set_sound_volume(self):
+        volume = self.sfx_slider.value / 100
+
+        self.pistol_sound.set_volume(volume)
+        self.shotgun_sound.set_volume(volume)
+        self.minigun_sound.set_volume(volume)
+        self.laser_sound.set_volume(volume)
+        self.freezegun_sound.set_volume(volume)
+        self.snowball_sound.set_volume(volume)
+        self.assault_rifle_sound.set_volume(volume)
+        self.sniper_sound.set_volume(volume)
+
+    def stop_minigun_sound(self):
+        if self.minigun_sound_playing:
+            if self.minigun_channel:
+                self.minigun_channel.stop()
+
+            self.minigun_channel = None
+            self.minigun_sound_playing = False
+
+    def play_shoot_sound(self, weapon):
+        self.set_sound_volume()
+
+        if weapon.name == "Handgun":
+            self.pistol_sound.play()
+
+        elif weapon.name == "Shotgun":
+            self.shotgun_sound.play()
+
+        elif weapon.name == "Laserbeamer":
+            self.laser_sound.play()
+
+        elif weapon.name == "Freeze Gun":
+            self.freezegun_sound.play()
+
+        elif weapon.name == "Snowball Cannon":
+            self.snowball_sound.play()
+
+        elif weapon.name == "Assault Rifle":
+            self.assault_rifle_sound.play()
+
+        elif weapon.name == "Sniper":
+            self.sniper_sound.play()
+
+        elif weapon.name == "Minigun":
+            if not self.minigun_sound_playing:
+                self.minigun_channel = self.minigun_sound.play(-1)
+                self.minigun_sound_playing = True
+
     def shoot(self):
         if not self.player:
             return
@@ -356,6 +418,8 @@ class GameApp:
             return
 
         weapon = self.player.current_weapon
+
+        self.play_shoot_sound(weapon)
 
         if weapon.name == "Laserbeamer":
             data = projectile_data_list[0]
@@ -420,14 +484,30 @@ class GameApp:
 
     def update_auto_fire(self):
         if not self.player:
-            return
-        if not self.mouse_held:
-            return
-        if self.player.current_weapon is None:
+            self.stop_minigun_sound()
             return
 
-        if self.player.current_weapon.name in ("Minigun", "Laserbeamer"):
+        if not self.mouse_held:
+            self.stop_minigun_sound()
+            return
+
+        if self.player.current_weapon is None:
+            self.stop_minigun_sound()
+            return
+
+        if self.player.current_weapon.name == "Minigun":
+            if self.player.ammo <= 0:
+                self.stop_minigun_sound()
+                return
+
             self.shoot()
+
+        elif self.player.current_weapon.name == "Laserbeamer":
+            self.stop_minigun_sound()
+            self.shoot()
+
+        else:
+            self.stop_minigun_sound()
 
     def update_local_projectiles(self):
         remove = []
@@ -517,6 +597,7 @@ class GameApp:
         self.server_projectiles = response.get("projectiles", [])
 
         if self.game_over:
+            self.stop_minigun_sound()
             self.state = "game_over"
 
     def update_game(self):
@@ -745,9 +826,12 @@ class GameApp:
     def handle_game_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                self.stop_minigun_sound()
+
                 if self.network:
                     self.network.close()
                     self.network = None
+
                 self.state = "menu"
 
             if event.key == pygame.K_r:
@@ -762,13 +846,17 @@ class GameApp:
 
         if event.type == pygame.MOUSEBUTTONUP and event.button == 1:
             self.mouse_held = False
+            self.stop_minigun_sound()
 
     def handle_game_over_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
+                self.stop_minigun_sound()
+
                 if self.network:
                     self.network.close()
                     self.network = None
+
                 self.state = "menu"
 
     def run(self):
@@ -778,8 +866,11 @@ class GameApp:
             if self.music_loaded:
                 pygame.mixer.music.set_volume(self.music_slider.value / 100)
 
+            self.set_sound_volume()
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
+                    self.stop_minigun_sound()
                     self.running = False
 
                 if event.type == pygame.VIDEORESIZE:
@@ -798,6 +889,7 @@ class GameApp:
                         elif self.settings_button.is_clicked(event.pos):
                             self.state = "settings"
                         elif self.quit_button.is_clicked(event.pos):
+                            self.stop_minigun_sound()
                             self.running = False
 
                 elif self.state == "join_screen":
@@ -835,6 +927,8 @@ class GameApp:
 
             if self.state == "game":
                 self.update_game()
+            else:
+                self.stop_minigun_sound()
 
             if self.state == "menu":
                 self.draw_menu()
@@ -850,6 +944,8 @@ class GameApp:
                 self.draw_game_over()
 
             pygame.display.update()
+
+        self.stop_minigun_sound()
 
         if self.network:
             self.network.close()
