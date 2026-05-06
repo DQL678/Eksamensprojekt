@@ -776,7 +776,7 @@ class GameApp:
     def draw_menu(self):
         self.screen.fill((25, 25, 25))
 
-        title = self.title_font.render("Menu", True, (255, 255, 255))
+        title = self.title_font.render("Gun Man Game", True, (255, 255, 255))
         title_rect = title.get_rect(
             center=(self.screen_width // 2, int(self.screen_height * 0.18))
         )
