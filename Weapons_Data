@@ -75,7 +75,7 @@
         "count": 2,
         "damage": 10
       },
-      "reload_speed": 1200,
+      "reload_speed": 2500,
       "ammo_capacity": 3,
       "special": {
         "type": "freeze",
