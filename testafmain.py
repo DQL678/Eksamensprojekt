@@ -1,4 +1,5 @@
 import pygame
+import os
 from map import GameMap
 from player import Player
 from weapons import WeaponDrop, Projectile, LaserBeam, create_weapon_from_json, load_weapon_images
@@ -136,6 +137,7 @@ WEAPON_SIZES = {
 class GameApp:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
 
         self.screen_width = 1200
         self.screen_height = 700
@@ -154,6 +156,9 @@ class GameApp:
         self.base_height = 900
 
         self.resize_ui()
+
+        self.music_loaded = False
+        self.load_background_music()
 
         self.game_map = None
         self.player = None
@@ -177,6 +182,21 @@ class GameApp:
         self.winner_id = None
 
         load_weapon_images()
+
+    def load_background_music(self):
+        music_path = os.path.join(
+            os.path.dirname(__file__),
+            "Masked Dedede - Kirby Triple Deluxe Music Extended.mp3"
+        )
+
+        try:
+            pygame.mixer.music.load(music_path)
+            pygame.mixer.music.set_volume(self.music_slider.value / 100)
+            pygame.mixer.music.play(-1)
+            self.music_loaded = True
+        except Exception as error:
+            print("Kunne ikke indlæse musik:", error)
+            self.music_loaded = False
 
     def center_horizontally(self, width):
         return self.screen_width // 2 - width // 2
@@ -754,6 +774,9 @@ class GameApp:
     def run(self):
         while self.running:
             self.clock.tick(60)
+
+            if self.music_loaded:
+                pygame.mixer.music.set_volume(self.music_slider.value / 100)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
