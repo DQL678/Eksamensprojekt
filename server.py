@@ -73,15 +73,71 @@ def get_random_spawn():
     ])
 
 
+def get_platforms_for_map(map_number):
+    if map_number == 2:
+        return [
+            {"x": 0, "y": 860, "w": 1600, "h": 40},
+
+            {"x": 650, "y": 130, "w": 300, "h": 8},
+
+            {"x": 520, "y": 250, "w": 180, "h": 8},
+            {"x": 900, "y": 250, "w": 180, "h": 8},
+
+            {"x": 390, "y": 370, "w": 180, "h": 8},
+            {"x": 1030, "y": 370, "w": 180, "h": 8},
+
+            {"x": 260, "y": 490, "w": 180, "h": 8},
+            {"x": 1160, "y": 490, "w": 180, "h": 8},
+
+            {"x": 390, "y": 610, "w": 180, "h": 8},
+            {"x": 1030, "y": 610, "w": 180, "h": 8},
+
+            {"x": 520, "y": 730, "w": 180, "h": 8},
+            {"x": 900, "y": 730, "w": 180, "h": 8},
+
+            {"x": 650, "y": 820, "w": 300, "h": 8},
+        ]
+
+    return [
+        {"x": 0, "y": 860, "w": 1600, "h": 40},
+
+        {"x": 180, "y": 100, "w": 140, "h": 8},
+        {"x": 700, "y": 100, "w": 200, "h": 8},
+        {"x": 1280, "y": 100, "w": 140, "h": 8},
+
+        {"x": 60, "y": 220, "w": 120, "h": 8},
+        {"x": 420, "y": 220, "w": 160, "h": 8},
+        {"x": 1020, "y": 220, "w": 160, "h": 8},
+        {"x": 1380, "y": 220, "w": 120, "h": 8},
+
+        {"x": 140, "y": 340, "w": 140, "h": 8},
+        {"x": 700, "y": 340, "w": 200, "h": 8},
+        {"x": 1320, "y": 340, "w": 140, "h": 8},
+
+        {"x": 40, "y": 460, "w": 120, "h": 8},
+        {"x": 390, "y": 460, "w": 160, "h": 8},
+        {"x": 1050, "y": 460, "w": 160, "h": 8},
+        {"x": 1400, "y": 460, "w": 120, "h": 8},
+
+        {"x": 180, "y": 580, "w": 140, "h": 8},
+        {"x": 700, "y": 580, "w": 200, "h": 8},
+        {"x": 1280, "y": 580, "w": 140, "h": 8},
+
+        {"x": 60, "y": 700, "w": 120, "h": 8},
+        {"x": 420, "y": 700, "w": 160, "h": 8},
+        {"x": 1020, "y": 700, "w": 160, "h": 8},
+        {"x": 1380, "y": 700, "w": 120, "h": 8},
+
+        {"x": 180, "y": 820, "w": 140, "h": 8},
+        {"x": 700, "y": 820, "w": 200, "h": 8},
+        {"x": 1280, "y": 820, "w": 140, "h": 8},
+    ]
+
+
 def reset_round():
-    global projectiles
-    global weapon_drop
-    global weapon_drop_timer
-    global game_over
-    global winner_id
-    global next_proj_id
-    global next_client_id
-    global selected_map
+    global projectiles, weapon_drop, weapon_drop_timer
+    global game_over, winner_id, next_proj_id
+    global next_client_id, selected_map
 
     projectiles = {}
     next_proj_id = 1
@@ -112,6 +168,58 @@ def rects_collide(a, b):
         a["y"] < b["y"] + b["h"] and
         a["y"] + a["h"] > b["y"]
     )
+
+
+def projectile_hits_platform(projectile_rect):
+    platforms = get_platforms_for_map(selected_map or 1)
+
+    for platform in platforms:
+        if rects_collide(projectile_rect, platform):
+            return True
+
+    return False
+
+
+def find_laser_end_x(start_x, y, direction, size):
+    platforms = get_platforms_for_map(selected_map or 1)
+
+    if direction == 1:
+        end_x = BASE_WIDTH
+        closest_distance = BASE_WIDTH
+
+        for platform in platforms:
+            laser_top = y - size // 2
+            laser_bottom = y + size // 2
+
+            if laser_bottom >= platform["y"] and laser_top <= platform["y"] + platform["h"]:
+                if platform["x"] > start_x:
+                    distance = platform["x"] - start_x
+
+                    if distance < closest_distance:
+                        closest_distance = distance
+                        end_x = platform["x"]
+
+        return end_x
+
+    else:
+        end_x = 0
+        closest_distance = BASE_WIDTH
+
+        for platform in platforms:
+            laser_top = y - size // 2
+            laser_bottom = y + size // 2
+
+            if laser_bottom >= platform["y"] and laser_top <= platform["y"] + platform["h"]:
+                platform_right = platform["x"] + platform["w"]
+
+                if platform_right < start_x:
+                    distance = start_x - platform_right
+
+                    if distance < closest_distance:
+                        closest_distance = distance
+                        end_x = platform_right
+
+        return end_x
 
 
 def check_game_over():
@@ -240,23 +348,36 @@ def update_projectiles():
                 continue
 
             direction = projectile.get("dir", 1)
+            size = projectile.get("size", 8)
+
+            end_x = find_laser_end_x(
+                projectile["x"],
+                projectile["y"],
+                direction,
+                size
+            )
+
+            projectile["end_x"] = end_x
 
             if direction == 1:
                 laser_x = projectile["x"]
-                laser_width = BASE_WIDTH - projectile["x"]
+                laser_width = max(0, end_x - projectile["x"])
             else:
-                laser_x = 0
-                laser_width = projectile["x"]
+                laser_x = end_x
+                laser_width = max(0, projectile["x"] - end_x)
 
             laser_rect = {
                 "x": laser_x,
-                "y": projectile["y"] - projectile.get("size", 8) // 2,
+                "y": projectile["y"] - size // 2,
                 "w": laser_width,
-                "h": projectile.get("size", 8)
+                "h": size
             }
 
             for player_id, player in players.items():
                 if player_id == owner_id:
+                    continue
+
+                if player["lives"] <= 0:
                     continue
 
                 player_rect = {
@@ -276,10 +397,6 @@ def update_projectiles():
         projectile["y"] += projectile.get("y_speed", 0)
         projectile["distance"] += abs(projectile["speed"])
 
-        if projectile["distance"] >= projectile["range"]:
-            remove_ids.append(proj_id)
-            continue
-
         projectile_rect = {
             "x": projectile["x"],
             "y": projectile["y"],
@@ -287,8 +404,19 @@ def update_projectiles():
             "h": projectile.get("size", 8)
         }
 
+        if projectile_hits_platform(projectile_rect):
+            remove_ids.append(proj_id)
+            continue
+
+        if projectile["distance"] >= projectile["range"]:
+            remove_ids.append(proj_id)
+            continue
+
         for player_id, player in players.items():
             if player_id == owner_id:
+                continue
+
+            if player["lives"] <= 0:
                 continue
 
             player_rect = {
@@ -325,8 +453,14 @@ def game_loop():
 
 
 def build_response():
+    visible_players = {}
+
+    for player_id, player in players.items():
+        if player["lives"] > 0:
+            visible_players[player_id] = player
+
     return {
-        "players": players,
+        "players": visible_players,
         "projectiles": list(projectiles.values()),
         "weapon_drop": weapon_drop,
         "game_over": game_over,
