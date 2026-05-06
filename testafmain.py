@@ -584,6 +584,11 @@ class GameApp:
                 if slowed_until > server_time_now:
                     time_left = int((slowed_until - server_time_now) * 1000)
                     self.player.apply_slow(time_left, slow_amount, current_time)
+
+                if self.player.lives <= 0:
+                    self.stop_minigun_sound()
+                    self.state = "game_over"
+
             else:
                 self.other_players[pid_str] = pdata
 
@@ -751,9 +756,13 @@ class GameApp:
             center=(self.screen_width // 2, int(self.screen_height * 0.35))
         )
         self.screen.blit(title, title_rect)
+        if self.game_over:
+            info_text = "Tryk ESC for at gå tilbage til menuen"
+        else:
+            info_text = "Du er ude. Vent på at runden bliver færdig."
 
         info = self.text_font.render(
-            "Tryk ESC for at gå tilbage til menuen",
+            info_text,
             True,
             (255, 255, 255)
         )
@@ -851,13 +860,12 @@ class GameApp:
     def handle_game_over_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                self.stop_minigun_sound()
+                if self.game_over:
+                    if self.network:
+                        self.network.close()
+                        self.network = None
 
-                if self.network:
-                    self.network.close()
-                    self.network = None
-
-                self.state = "menu"
+                    self.state = "menu"
 
     def run(self):
         while self.running:
@@ -927,6 +935,13 @@ class GameApp:
 
             if self.state == "game":
                 self.update_game()
+
+            elif self.state == "game_over":
+                self.stop_minigun_sound()
+
+                if self.network and self.player:
+                    self.sync_with_server()
+
             else:
                 self.stop_minigun_sound()
 
